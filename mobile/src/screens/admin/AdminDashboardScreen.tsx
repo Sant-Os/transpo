@@ -53,10 +53,13 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   // Campos Formulario - Vehículos
   const [nuevaPlaca, setNuevaPlaca] = useState<string>('');
-  const [nuevoModelo, setNuevoModelo] = useState<string>('');
   const [nuevaGestion, setNuevaGestion] = useState<string>('');
-  const [nuevaCapacidad, setNuevaCapacidad] = useState<string>('18');
-  const [nuevoPropietarioId, setNuevoPropietarioId] = useState<string>('');
+  const [listaSocios, setListaSocios] = useState<any[]>([]);
+  const [modeloSeleccionado, setModeloSeleccionado] = useState<string>('Toyota HiAce');
+  const [modeloManual, setModeloManual] = useState<string>('');
+  const [capacidadSeleccionada, setCapacidadSeleccionada] = useState<string>('18');
+  const [capacidadManual, setCapacidadManual] = useState<string>('');
+  const [propietarioSocioId, setPropietarioSocioId] = useState<string>('');
 
   // Campos Formulario - Rutas
   const [nuevoNombreRuta, setNuevoNombreRuta] = useState<string>('');
@@ -194,6 +197,17 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
     try {
       const { data } = await supabase.from(tipo).select('*').order('id', { ascending: false });
       if (data) setListaGestion(data);
+
+      if (tipo === 'vehiculos') {
+        const { data: socios } = await supabase
+          .from('usuarios')
+          .select('id, nombre_completo')
+          .eq('rol', 'SOCIO')
+          .eq('activo', true)
+          .order('nombre_completo', { ascending: true });
+        if (socios) setListaSocios(socios);
+      }
+
       setMostrarModalGestion(true);
     } catch (e: any) {
       console.error(e);
@@ -241,16 +255,20 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   };
 
   const agregarVehiculo = async () => {
-    if (!nuevaPlaca || !nuevaCapacidad) {
-      alert('Por favor complete los campos obligatorios: Placa y Capacidad.');
+    const modeloFinal = modeloSeleccionado === 'Otro' ? modeloManual : modeloSeleccionado;
+    const capacidadFinal = capacidadSeleccionada === 'Otro' ? parseInt(capacidadManual) : parseInt(capacidadSeleccionada);
+    const propietarioIdFinal = propietarioSocioId ? parseInt(propietarioSocioId) : null;
+
+    if (!nuevaPlaca || !modeloFinal || !capacidadFinal) {
+      alert('Por favor complete los campos obligatorios: Placa, Modelo y Capacidad.');
       return;
     }
     const { error } = await supabase.from('vehiculos').insert({
       placa: nuevaPlaca,
-      modelo: nuevoModelo,
+      modelo: modeloFinal,
       gestion: parseInt(nuevaGestion) || 2020,
-      capacidad: parseInt(nuevaCapacidad),
-      propietario_id: parseInt(nuevoPropietarioId) || null,
+      capacidad: capacidadFinal,
+      propietario_id: propietarioIdFinal,
       estado: 'ACTIVO'
     });
 
@@ -258,10 +276,12 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       alert('Error guardando vehículo: ' + error.message);
     } else {
       setNuevaPlaca('');
-      setNuevoModelo('');
+      setModeloSeleccionado('Toyota HiAce');
+      setModeloManual('');
+      setCapacidadSeleccionada('18');
+      setCapacidadManual('');
+      setPropietarioSocioId('');
       setNuevaGestion('');
-      setNuevaCapacidad('18');
-      setNuevoPropietarioId('');
       setMostrarFormularioAgregar(false);
       abrirModalGestion('vehiculos');
       cargarContadoresSistema();
@@ -529,10 +549,85 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                 {tipoGestion === 'vehiculos' && (
                   <View>
                     <TextInput style={estilos.modalInput} placeholder="Placa (ej: 2314-HBG)" value={nuevaPlaca} onChangeText={setNuevaPlaca} />
-                    <TextInput style={estilos.modalInput} placeholder="Modelo (ej: Toyota HiAce)" value={nuevoModelo} onChangeText={setNuevoModelo} />
-                    <TextInput style={estilos.modalInput} placeholder="Gestión (ej: 2020)" value={nuevaGestion} onChangeText={setNuevaGestion} keyboardType="numeric" />
-                    <TextInput style={estilos.modalInput} placeholder="Capacidad (Asientos)" value={nuevaCapacidad} onChangeText={setNuevaCapacidad} keyboardType="numeric" />
-                    <TextInput style={estilos.modalInput} placeholder="ID Socio Propietario" value={nuevoPropietarioId} onChangeText={setNuevoPropietarioId} keyboardType="numeric" />
+                    
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Modelo de Vehículo</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      {['Toyota HiAce', 'Toyota Noah', 'Nissan Caravan', 'Mitsubishi L300', 'Otro'].map((mod) => (
+                        <AnimatedPressable
+                          key={`modelo-${mod}`}
+                          style={[
+                            estilos.chip,
+                            modeloSeleccionado === mod && estilos.chipActive
+                          ]}
+                          onPress={() => setModeloSeleccionado(mod)}
+                        >
+                          <Text style={[estilos.chipText, modeloSeleccionado === mod && estilos.chipTextActive]}>{mod}</Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+                    {modeloSeleccionado === 'Otro' && (
+                      <TextInput
+                        style={estilos.modalInput}
+                        placeholder="Escriba el modelo a mano"
+                        value={modeloManual}
+                        onChangeText={setModeloManual}
+                      />
+                    )}
+
+                    <TextInput style={estilos.modalInput} placeholder="Gestión (Año - ej: 2020)" value={nuevaGestion} onChangeText={setNuevaGestion} keyboardType="numeric" />
+                    
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Capacidad (Asientos)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      {['7', '15', '18', '22', 'Otro'].map((cap) => (
+                        <AnimatedPressable
+                          key={`capacidad-${cap}`}
+                          style={[
+                            estilos.chip,
+                            capacidadSeleccionada === cap && estilos.chipActive
+                          ]}
+                          onPress={() => setCapacidadSeleccionada(cap)}
+                        >
+                          <Text style={[estilos.chipText, capacidadSeleccionada === cap && estilos.chipTextActive]}>{cap}</Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+                    {capacidadSeleccionada === 'Otro' && (
+                      <TextInput
+                        style={estilos.modalInput}
+                        placeholder="Escriba la capacidad a mano"
+                        value={capacidadManual}
+                        onChangeText={setCapacidadManual}
+                        keyboardType="numeric"
+                      />
+                    )}
+
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Socio Propietario</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      <AnimatedPressable
+                        style={[
+                          estilos.chip,
+                          propietarioSocioId === '' && estilos.chipActive
+                        ]}
+                        onPress={() => setPropietarioSocioId('')}
+                      >
+                        <Text style={[estilos.chipText, propietarioSocioId === '' && estilos.chipTextActive]}>Ninguno (Sin asignar)</Text>
+                      </AnimatedPressable>
+                      {listaSocios.map((socio) => (
+                        <AnimatedPressable
+                          key={`socio-${socio.id}`}
+                          style={[
+                            estilos.chip,
+                            propietarioSocioId === socio.id.toString() && estilos.chipActive
+                          ]}
+                          onPress={() => setPropietarioSocioId(socio.id.toString())}
+                        >
+                          <Text style={[estilos.chipText, propietarioSocioId === socio.id.toString() && estilos.chipTextActive]}>
+                            {socio.nombre_completo}
+                          </Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+
                     <AnimatedPressable style={estilos.submitBtn} onPress={agregarVehiculo}>
                       <Text style={estilos.submitBtnText}>Guardar Vehículo</Text>
                     </AnimatedPressable>
