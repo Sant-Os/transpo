@@ -52,7 +52,8 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   const [viajeNuevoRutaId, setViajeNuevoRutaId] = useState<string>('');
   const [viajeNuevoVehiculoId, setViajeNuevoVehiculoId] = useState<string>('');
   const [viajeNuevoChoferId, setViajeNuevoChoferId] = useState<string>('');
-  const [viajeNuevoHora, setViajeNuevoHora] = useState<string>('14:00');
+  const [viajeNuevoHoraSeleccionada, setViajeNuevoHoraSeleccionada] = useState<string>(new Date().getHours().toString().padStart(2, '0'));
+  const [viajeNuevoMinutoSeleccionado, setViajeNuevoMinutoSeleccionado] = useState<string>((Math.round(new Date().getMinutes() / 5) * 5 % 60).toString().padStart(2, '0'));
   const [viajeNuevoFecha, setViajeNuevoFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [listaVehiculos, setListaVehiculos] = useState<any[]>([]);
   const [listaChoferes, setListaChoferes] = useState<any[]>([]);
@@ -482,18 +483,19 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   };
 
   const manejarProgramarViaje = async () => {
-    if (!viajeNuevoRutaId || !viajeNuevoVehiculoId || !viajeNuevoChoferId || !viajeNuevoHora) {
+    if (!viajeNuevoRutaId || !viajeNuevoVehiculoId || !viajeNuevoChoferId || !viajeNuevoHoraSeleccionada || !viajeNuevoMinutoSeleccionado) {
       mostrarToast('Por favor complete todos los campos obligatorios.', 'warning');
       return;
     }
 
     try {
       setCargando(true);
+      const horaSalidaFinal = `${viajeNuevoHoraSeleccionada}:${viajeNuevoMinutoSeleccionado}`;
       const { error } = await supabase.from('viajes').insert({
         ruta_id: parseInt(viajeNuevoRutaId),
         vehiculo_id: parseInt(viajeNuevoVehiculoId),
         chofer_id: parseInt(viajeNuevoChoferId),
-        hora_salida: viajeNuevoHora,
+        hora_salida: horaSalidaFinal,
         fecha_viaje: viajeNuevoFecha,
         estado: 'PROGRAMADO',
         oficina_id: usuarioActual?.oficina_id || null
@@ -507,6 +509,10 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
       setViajeNuevoRutaId('');
       setViajeNuevoVehiculoId('');
       setViajeNuevoChoferId('');
+      const ahora = new Date();
+      setViajeNuevoHoraSeleccionada(ahora.getHours().toString().padStart(2, '0'));
+      setViajeNuevoMinutoSeleccionado((Math.round(ahora.getMinutes() / 5) * 5 % 60).toString().padStart(2, '0'));
+      setViajeNuevoFecha(ahora.toISOString().split('T')[0]);
       await cargarDatosIniciales();
     } catch (e: any) {
       mostrarToast('Error programando viaje: ' + e.message, 'error');
@@ -1181,29 +1187,44 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
       {/* MODAL PROGRAMAR VIAJE */}
       <Modal visible={mostrarModalProgramarViaje} transparent animationType="slide" onRequestClose={() => setMostrarModalProgramarViaje(false)}>
         <View style={estilos.pantallaModal}>
-          <View style={[estilos.tarjetaModal, { padding: 20, maxWidth: 380, maxHeight: '90%' }]}>
+          <View style={[estilos.tarjetaModal, { padding: 20, maxWidth: 390, maxHeight: '90%' }]}>
             <Text style={[estilos.tituloModal, { alignSelf: 'flex-start', fontSize: 18, marginBottom: 16 }]}>Programar Nuevo Viaje</Text>
             <ScrollView style={{ width: '100%' }} showsVerticalScrollIndicator={false}>
               
-              {/* Ruta */}
-              <Text style={estilos.etiquetaCampo}>Seleccionar Ruta</Text>
-              {listaRutasTarifas.length === 0 ? (
-                <Text style={estilos.textoVacio}>No hay rutas configuradas</Text>
-              ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  {listaRutasTarifas.map((ruta) => (
-                    <AnimatedPressable
-                      key={ruta.id}
-                      style={[estilos.botonChip, viajeNuevoRutaId == ruta.id.toString() && estilos.botonChipActivo]}
-                      onPress={() => setViajeNuevoRutaId(ruta.id.toString())}
-                    >
-                      <Text style={[estilos.textoChip, viajeNuevoRutaId == ruta.id.toString() && estilos.textoChipActivo]}>
-                        {ruta.nombre}
-                      </Text>
-                    </AnimatedPressable>
-                  ))}
-                </ScrollView>
-              )}
+              {/* Ruta (Filtrada a la ruta principal de ida y vuelta) */}
+              <Text style={estilos.etiquetaCampo}>Seleccionar Ruta Principal</Text>
+              {(() => {
+                const mainRutas = listaRutasTarifas.filter(ruta => 
+                  ruta.origen === tramoOrigen && 
+                  (ruta.destino === 'San Cristóbal' || ruta.destino === 'Uyuni')
+                );
+                const rutasMostrar = mainRutas.length > 0 ? mainRutas : listaRutasTarifas.filter(r => r.origen === tramoOrigen);
+
+                if (rutasMostrar.length === 0) {
+                  return <Text style={estilos.textoVacio}>No hay rutas registradas para esta oficina</Text>;
+                }
+
+                // Autoseleccionar la primera ruta si no hay ninguna seleccionada
+                if (!viajeNuevoRutaId && rutasMostrar.length > 0) {
+                  setTimeout(() => setViajeNuevoRutaId(rutasMostrar[0].id.toString()), 50);
+                }
+
+                return (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                    {rutasMostrar.map((ruta) => (
+                      <AnimatedPressable
+                        key={ruta.id}
+                        style={[estilos.botonChip, viajeNuevoRutaId == ruta.id.toString() && estilos.botonChipActivo]}
+                        onPress={() => setViajeNuevoRutaId(ruta.id.toString())}
+                      >
+                        <Text style={[estilos.textoChip, viajeNuevoRutaId == ruta.id.toString() && estilos.textoChipActivo]}>
+                          {ruta.nombre}
+                        </Text>
+                      </AnimatedPressable>
+                    ))}
+                  </ScrollView>
+                );
+              })()}
 
               {/* Vehículo */}
               <Text style={estilos.etiquetaCampo}>Seleccionar Vehículo (Flota)</Text>
@@ -1215,7 +1236,13 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                     <AnimatedPressable
                       key={v.id}
                       style={[estilos.botonChip, viajeNuevoVehiculoId == v.id.toString() && estilos.botonChipActivo]}
-                      onPress={() => setViajeNuevoVehiculoId(v.id.toString())}
+                      onPress={() => {
+                        setViajeNuevoVehiculoId(v.id.toString());
+                        // Autoseleccionar el chofer vinculado a este vehículo
+                        if (v.chofer_id) {
+                          setViajeNuevoChoferId(v.chofer_id.toString());
+                        }
+                      }}
                     >
                       <Text style={[estilos.textoChip, viajeNuevoVehiculoId == v.id.toString() && estilos.textoChipActivo]}>
                         {v.placa} ({v.modelo})
@@ -1235,7 +1262,14 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                     <AnimatedPressable
                       key={c.id}
                       style={[estilos.botonChip, viajeNuevoChoferId == c.id.toString() && estilos.botonChipActivo]}
-                      onPress={() => setViajeNuevoChoferId(c.id.toString())}
+                      onPress={() => {
+                        setViajeNuevoChoferId(c.id.toString());
+                        // Autoseleccionar el vehículo vinculado a este chofer
+                        const veh = listaVehiculos.find(v => v.chofer_id?.toString() === c.id.toString());
+                        if (veh) {
+                          setViajeNuevoVehiculoId(veh.id.toString());
+                        }
+                      }}
                     >
                       <Text style={[estilos.textoChip, viajeNuevoChoferId == c.id.toString() && estilos.textoChipActivo]}>
                         {c.nombre_completo}
@@ -1245,25 +1279,72 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                 </ScrollView>
               )}
 
-              {/* Hora salida */}
-              <Text style={estilos.etiquetaCampo}>Hora de Salida (ej: 14:30)</Text>
-              <TextInput
-                style={estilos.input}
-                placeholder="14:00"
-                placeholderTextColor={colors.textTertiary}
-                value={viajeNuevoHora}
-                onChangeText={setViajeNuevoHora}
-              />
+              {/* Horario con Scroll */}
+              <Text style={estilos.etiquetaCampo}>Hora de Salida</Text>
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[estilos.etiquetaCampo, { fontSize: 11, marginTop: 0 }]}>Hora</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {Array.from({ length: 24 }).map((_, h) => {
+                      const hStr = h.toString().padStart(2, '0');
+                      return (
+                        <AnimatedPressable
+                          key={`hr-${hStr}`}
+                          style={[estilos.botonChip, { paddingHorizontal: 10, paddingVertical: 6 }, viajeNuevoHoraSeleccionada === hStr && estilos.botonChipActivo]}
+                          onPress={() => setViajeNuevoHoraSeleccionada(hStr)}
+                        >
+                          <Text style={[estilos.textoChip, { fontSize: 13 }, viajeNuevoHoraSeleccionada === hStr && estilos.textoChipActivo]}>{hStr}</Text>
+                        </AnimatedPressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+                <Text style={{ fontSize: 18, color: colors.textSecondary, marginTop: 14 }}>:</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[estilos.etiquetaCampo, { fontSize: 11, marginTop: 0 }]}>Minuto</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((mStr) => {
+                      return (
+                        <AnimatedPressable
+                          key={`min-${mStr}`}
+                          style={[estilos.botonChip, { paddingHorizontal: 10, paddingVertical: 6 }, viajeNuevoMinutoSeleccionado === mStr && estilos.botonChipActivo]}
+                          onPress={() => setViajeNuevoMinutoSeleccionado(mStr)}
+                        >
+                          <Text style={[estilos.textoChip, { fontSize: 13 }, viajeNuevoMinutoSeleccionado === mStr && estilos.textoChipActivo]}>{mStr}</Text>
+                        </AnimatedPressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </View>
 
-              {/* Fecha viaje */}
+              {/* Fecha de Viaje con Scroll */}
               <Text style={estilos.etiquetaCampo}>Fecha del Viaje</Text>
-              <TextInput
-                style={estilos.input}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textTertiary}
-                value={viajeNuevoFecha}
-                onChangeText={setViajeNuevoFecha}
-              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {(() => {
+                  const dias = [];
+                  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                  const hoy = new Date();
+                  for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(hoy.getDate() + i);
+                    const fechaStr = d.toISOString().split('T')[0];
+                    const etiqueta = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : `${nombresDias[d.getDay()]} ${d.getDate()}`;
+                    dias.push({ etiqueta, fechaStr });
+                  }
+                  return dias.map((dia) => (
+                    <AnimatedPressable
+                      key={dia.fechaStr}
+                      style={[estilos.botonChip, viajeNuevoFecha === dia.fechaStr && estilos.botonChipActivo]}
+                      onPress={() => setViajeNuevoFecha(dia.fechaStr)}
+                    >
+                      <Text style={[estilos.textoChip, viajeNuevoFecha === dia.fechaStr && estilos.textoChipActivo]}>
+                        {dia.etiqueta}
+                      </Text>
+                    </AnimatedPressable>
+                  ));
+                })()}
+              </ScrollView>
             </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: 16 }}>

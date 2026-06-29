@@ -25,6 +25,7 @@ export interface Vehiculo {
   gestion: number;
   capacidad: number; // Por defecto 18 asientos
   propietario_id: number;
+  chofer_id?: number;
   estado: 'ACTIVO' | 'MANTENIMIENTO' | 'INACTIVO';
 }
 

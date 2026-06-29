@@ -55,11 +55,13 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   const [nuevaPlaca, setNuevaPlaca] = useState<string>('');
   const [nuevaGestion, setNuevaGestion] = useState<string>('');
   const [listaSocios, setListaSocios] = useState<any[]>([]);
+  const [listaChoferes, setListaChoferes] = useState<any[]>([]);
   const [modeloSeleccionado, setModeloSeleccionado] = useState<string>('Toyota HiAce');
   const [modeloManual, setModeloManual] = useState<string>('');
   const [capacidadSeleccionada, setCapacidadSeleccionada] = useState<string>('18');
   const [capacidadManual, setCapacidadManual] = useState<string>('');
   const [propietarioSocioId, setPropietarioSocioId] = useState<string>('');
+  const [choferAsignadoId, setChoferAsignadoId] = useState<string>('');
 
   // Campos Formulario - Rutas
   const [nuevoNombreRuta, setNuevoNombreRuta] = useState<string>('');
@@ -206,6 +208,14 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
           .eq('activo', true)
           .order('nombre_completo', { ascending: true });
         if (socios) setListaSocios(socios);
+
+        const { data: choferes } = await supabase
+          .from('usuarios')
+          .select('id, nombre_completo')
+          .eq('rol', 'CHOFER')
+          .eq('activo', true)
+          .order('nombre_completo', { ascending: true });
+        if (choferes) setListaChoferes(choferes);
       }
 
       setMostrarModalGestion(true);
@@ -258,6 +268,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
     const modeloFinal = modeloSeleccionado === 'Otro' ? modeloManual : modeloSeleccionado;
     const capacidadFinal = capacidadSeleccionada === 'Otro' ? parseInt(capacidadManual) : parseInt(capacidadSeleccionada);
     const propietarioIdFinal = propietarioSocioId ? parseInt(propietarioSocioId) : null;
+    const choferIdFinal = choferAsignadoId ? parseInt(choferAsignadoId) : null;
 
     if (!nuevaPlaca || !modeloFinal || !capacidadFinal) {
       alert('Por favor complete los campos obligatorios: Placa, Modelo y Capacidad.');
@@ -269,6 +280,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       gestion: parseInt(nuevaGestion) || 2020,
       capacidad: capacidadFinal,
       propietario_id: propietarioIdFinal,
+      chofer_id: choferIdFinal,
       estado: 'ACTIVO'
     });
 
@@ -281,6 +293,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       setCapacidadSeleccionada('18');
       setCapacidadManual('');
       setPropietarioSocioId('');
+      setChoferAsignadoId('');
       setNuevaGestion('');
       setMostrarFormularioAgregar(false);
       abrirModalGestion('vehiculos');
@@ -624,6 +637,31 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                           <Text style={[estilos.chipText, propietarioSocioId === socio.id.toString() && estilos.chipTextActive]}>
                             {socio.nombre_completo}
                           </Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8, marginTop: 4 }]}>Conductor (Chofer Asignado)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      <AnimatedPressable
+                        style={[
+                          estilos.chip,
+                          choferAsignadoId === '' && estilos.chipActive
+                        ]}
+                        onPress={() => setChoferAsignadoId('')}
+                      >
+                        <Text style={[estilos.chipText, choferAsignadoId === '' && estilos.chipTextActive]}>Ninguno (Sin asignar)</Text>
+                      </AnimatedPressable>
+                      {listaChoferes.map((ch) => (
+                        <AnimatedPressable
+                          key={`asigchofer-${ch.id}`}
+                          style={[
+                            estilos.chip,
+                            choferAsignadoId === ch.id.toString() && estilos.chipActive
+                          ]}
+                          onPress={() => setChoferAsignadoId(ch.id.toString())}
+                        >
+                          <Text style={[estilos.chipText, choferAsignadoId === ch.id.toString() && estilos.chipTextActive]}>{ch.nombre_completo}</Text>
                         </AnimatedPressable>
                       ))}
                     </ScrollView>
