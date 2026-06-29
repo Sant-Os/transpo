@@ -482,7 +482,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                       <View style={{ marginBottom: 16 }}>
                         <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Oficina Asignada</Text>
                         <SegmentedControl
-                          segments={['Central Uyuni', 'San Cristóbal']}
+                          segments={['Uyuni', 'San Cristóbal']}
                           selectedIndex={oficinaId === 1 ? 0 : 1}
                           onChange={(index) => {
                             setOficinaId(index === 0 ? 1 : 2);
