@@ -200,6 +200,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const agregarUsuario = async () => {
     if (!nuevoNombreUsuario || !nuevaContrasena || !nuevoNombreCompleto) {
+      alert('Por favor complete los campos obligatorios: Usuario, Contraseña y Nombre.');
       return;
     }
     const { error } = await supabase.from('usuarios').insert({
@@ -213,7 +214,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       activo: true
     });
 
-    if (!error) {
+    if (error) {
+      alert('Error guardando usuario: ' + error.message);
+    } else {
       setNuevoNombreUsuario('');
       setNuevaContrasena('');
       setNuevoNombreCompleto('');
@@ -227,7 +230,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const borrarUsuario = async (id: number) => {
     const { error } = await supabase.from('usuarios').delete().eq('id', id);
-    if (!error) {
+    if (error) {
+      alert('Error borrando usuario: ' + error.message);
+    } else {
       abrirModalGestion('usuarios');
       cargarContadoresSistema();
     }
@@ -235,6 +240,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const agregarVehiculo = async () => {
     if (!nuevaPlaca || !nuevaCapacidad) {
+      alert('Por favor complete los campos obligatorios: Placa y Capacidad.');
       return;
     }
     const { error } = await supabase.from('vehiculos').insert({
@@ -246,7 +252,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       estado: 'ACTIVO'
     });
 
-    if (!error) {
+    if (error) {
+      alert('Error guardando vehículo: ' + error.message);
+    } else {
       setNuevaPlaca('');
       setNuevoModelo('');
       setNuevaGestion('');
@@ -260,7 +268,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const borrarVehiculo = async (id: number) => {
     const { error } = await supabase.from('vehiculos').delete().eq('id', id);
-    if (!error) {
+    if (error) {
+      alert('Error borrando vehículo: ' + error.message);
+    } else {
       abrirModalGestion('vehiculos');
       cargarContadoresSistema();
     }
@@ -268,6 +278,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const agregarRuta = async () => {
     if (!nuevoNombreRuta || !nuevoOrigen || !nuevoDestino) {
+      alert('Por favor complete los campos obligatorios: Nombre de Ruta, Origen y Destino.');
       return;
     }
     const { error } = await supabase.from('rutas').insert({
@@ -277,7 +288,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       minutos_estimados: parseInt(nuevaDuracion) || 180
     });
 
-    if (!error) {
+    if (error) {
+      alert('Error guardando ruta: ' + error.message);
+    } else {
       setNuevoNombreRuta('');
       setNuevoOrigen('');
       setNuevoDestino('');
@@ -290,7 +303,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const borrarRuta = async (id: number) => {
     const { error } = await supabase.from('rutas').delete().eq('id', id);
-    if (!error) {
+    if (error) {
+      alert('Error borrando ruta: ' + error.message);
+    } else {
       abrirModalGestion('rutas');
       cargarContadoresSistema();
     }
@@ -298,6 +313,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const agregarViaje = async () => {
     if (!nuevoViajeRutaId || !nuevoViajeVehiculoId || !nuevoViajeChoferId) {
+      alert('Por favor complete los campos obligatorios: ID de Ruta, ID de Vehículo e ID de Chofer.');
       return;
     }
     const { error } = await supabase.from('viajes').insert({
@@ -308,7 +324,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       estado: 'PROGRAMADO'
     });
 
-    if (!error) {
+    if (error) {
+      alert('Error guardando viaje: ' + error.message);
+    } else {
       setNuevoViajeRutaId('');
       setNuevoViajeVehiculoId('');
       setNuevoViajeChoferId('');
@@ -321,7 +339,9 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   const borrarViaje = async (id: number) => {
     const { error } = await supabase.from('viajes').delete().eq('id', id);
-    if (!error) {
+    if (error) {
+      alert('Error borrando viaje: ' + error.message);
+    } else {
       abrirModalGestion('viajes');
       cargarContadoresSistema();
     }
