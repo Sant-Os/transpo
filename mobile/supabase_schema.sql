@@ -326,3 +326,12 @@ alter publication supabase_realtime add table public.mensajes;
 alter publication supabase_realtime add table public.boletos;
 alter publication supabase_realtime add table public.viajes;
 alter publication supabase_realtime add table public.alertas;
+
+-- ============================================================
+-- CONCEDER PERMISOS A ROLES DE SUPABASE (Evita permission denied)
+-- ============================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+

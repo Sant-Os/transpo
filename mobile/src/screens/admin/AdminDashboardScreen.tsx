@@ -60,8 +60,10 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
   // Campos Formulario - Rutas
   const [nuevoNombreRuta, setNuevoNombreRuta] = useState<string>('');
-  const [nuevoOrigen, setNuevoOrigen] = useState<string>('');
-  const [nuevoDestino, setNuevoDestino] = useState<string>('');
+  const [origenSeleccionado, setOrigenSeleccionado] = useState<string>('Uyuni');
+  const [destinoSeleccionado, setDestinoSeleccionado] = useState<string>('San Cristóbal');
+  const [origenManual, setOrigenManual] = useState<string>('');
+  const [destinoManual, setDestinoManual] = useState<string>('');
   const [nuevaDuracion, setNuevaDuracion] = useState<string>('180');
 
   // Campos Formulario - Viajes
@@ -277,14 +279,19 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   };
 
   const agregarRuta = async () => {
-    if (!nuevoNombreRuta || !nuevoOrigen || !nuevoDestino) {
-      alert('Por favor complete los campos obligatorios: Nombre de Ruta, Origen y Destino.');
+    const origenFinal = origenSeleccionado === 'Otro' ? origenManual : origenSeleccionado;
+    const destinoFinal = destinoSeleccionado === 'Otro' ? destinoManual : destinoSeleccionado;
+    const nombreRutaFinal = nuevoNombreRuta.trim() || `${origenFinal} - ${destinoFinal}`;
+
+    if (!origenFinal || !destinoFinal) {
+      alert('Por favor complete los campos obligatorios: Origen y Destino.');
       return;
     }
+
     const { error } = await supabase.from('rutas').insert({
-      nombre: nuevoNombreRuta,
-      origen: nuevoOrigen,
-      destino: nuevoDestino,
+      nombre: nombreRutaFinal,
+      origen: origenFinal,
+      destino: destinoFinal,
       minutos_estimados: parseInt(nuevaDuracion) || 180
     });
 
@@ -292,8 +299,10 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       alert('Error guardando ruta: ' + error.message);
     } else {
       setNuevoNombreRuta('');
-      setNuevoOrigen('');
-      setNuevoDestino('');
+      setOrigenSeleccionado('Uyuni');
+      setDestinoSeleccionado('San Cristóbal');
+      setOrigenManual('');
+      setDestinoManual('');
       setNuevaDuracion('180');
       setMostrarFormularioAgregar(false);
       abrirModalGestion('rutas');
@@ -532,9 +541,55 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
 
                 {tipoGestion === 'rutas' && (
                   <View>
-                    <TextInput style={estilos.modalInput} placeholder="Nombre Ruta (ej: Uyuni - Potosi)" value={nuevoNombreRuta} onChangeText={setNuevoNombreRuta} />
-                    <TextInput style={estilos.modalInput} placeholder="Origen (ej: Uyuni)" value={nuevoOrigen} onChangeText={setNuevoOrigen} />
-                    <TextInput style={estilos.modalInput} placeholder="Destino (ej: Potosi)" value={nuevoDestino} onChangeText={setNuevoDestino} />
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Origen de la Ruta</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      {['Uyuni', 'Ramaditas', 'Vila Vila', 'San Cristóbal', 'Culpina', 'Potosí', 'Otro'].map((loc) => (
+                        <AnimatedPressable
+                          key={`origen-${loc}`}
+                          style={[
+                            estilos.chip,
+                            origenSeleccionado === loc && estilos.chipActive
+                          ]}
+                          onPress={() => setOrigenSeleccionado(loc)}
+                        >
+                          <Text style={[estilos.chipText, origenSeleccionado === loc && estilos.chipTextActive]}>{loc}</Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+                    {origenSeleccionado === 'Otro' && (
+                      <TextInput
+                        style={estilos.modalInput}
+                        placeholder="Escriba el origen a mano"
+                        value={origenManual}
+                        onChangeText={setOrigenManual}
+                      />
+                    )}
+
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8, marginTop: 4 }]}>Destino de la Ruta</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                      {['Uyuni', 'Ramaditas', 'Vila Vila', 'San Cristóbal', 'Culpina', 'Potosí', 'Otro'].map((loc) => (
+                        <AnimatedPressable
+                          key={`destino-${loc}`}
+                          style={[
+                            estilos.chip,
+                            destinoSeleccionado === loc && estilos.chipActive
+                          ]}
+                          onPress={() => setDestinoSeleccionado(loc)}
+                        >
+                          <Text style={[estilos.chipText, destinoSeleccionado === loc && estilos.chipTextActive]}>{loc}</Text>
+                        </AnimatedPressable>
+                      ))}
+                    </ScrollView>
+                    {destinoSeleccionado === 'Otro' && (
+                      <TextInput
+                        style={estilos.modalInput}
+                        placeholder="Escriba el destino a mano"
+                        value={destinoManual}
+                        onChangeText={setDestinoManual}
+                      />
+                    )}
+
+                    <TextInput style={estilos.modalInput} placeholder="Nombre Ruta (Opcional - ej: Uyuni - Potosi)" value={nuevoNombreRuta} onChangeText={setNuevoNombreRuta} />
                     <TextInput style={estilos.modalInput} placeholder="Duración Estimada (Minutos)" value={nuevaDuracion} onChangeText={setNuevaDuracion} keyboardType="numeric" />
                     <AnimatedPressable style={estilos.submitBtn} onPress={agregarRuta}>
                       <Text style={estilos.submitBtnText}>Guardar Ruta</Text>
@@ -627,4 +682,8 @@ const estilos = StyleSheet.create({
   modalInput: { ...typography.body, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12, color: colors.text },
   submitBtn: { backgroundColor: colors.success, paddingVertical: 14, borderRadius: 14, alignItems: 'center', shadowColor: colors.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
   submitBtnText: { ...typography.headline, color: '#FFF' },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.separator, justifyContent: 'center', alignItems: 'center' },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { ...typography.caption1, color: colors.textSecondary, fontFamily: typography.fontFamilyMedium },
+  chipTextActive: { color: '#FFF', fontFamily: typography.fontFamilySemiBold },
 });
