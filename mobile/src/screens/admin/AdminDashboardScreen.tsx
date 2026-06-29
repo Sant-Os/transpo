@@ -49,6 +49,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   const [nuevoCI, setNuevoCI] = useState<string>('');
   const [nuevoTelefono, setNuevoTelefono] = useState<string>('');
   const [nuevoRol, setNuevoRol] = useState<string>('SECRETARIA');
+  const [oficinaId, setOficinaId] = useState<number>(1);
 
   // Campos Formulario - Vehículos
   const [nuevaPlaca, setNuevaPlaca] = useState<string>('');
@@ -208,6 +209,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       ci: nuevoCI,
       telefono: nuevoTelefono,
       rol: nuevoRol,
+      oficina_id: nuevoRol === 'SECRETARIA' ? oficinaId : null,
       activo: true
     });
 
@@ -467,14 +469,27 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                     <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8, marginTop: 4 }]}>Rol de Usuario</Text>
                     <View style={{ marginBottom: 16 }}>
                       <SegmentedControl
-                        segments={['Admin', 'Secretaria', 'Chofer', 'Socio']}
-                        selectedIndex={['ADMINISTRADOR', 'SECRETARIA', 'CHOFER', 'SOCIO'].indexOf(nuevoRol)}
+                        segments={['Secretaria', 'Chofer', 'Socio']}
+                        selectedIndex={['SECRETARIA', 'CHOFER', 'SOCIO'].indexOf(nuevoRol) === -1 ? 0 : ['SECRETARIA', 'CHOFER', 'SOCIO'].indexOf(nuevoRol)}
                         onChange={(index) => {
-                          const rolesMapeados = ['ADMINISTRADOR', 'SECRETARIA', 'CHOFER', 'SOCIO'];
+                          const rolesMapeados = ['SECRETARIA', 'CHOFER', 'SOCIO'];
                           setNuevoRol(rolesMapeados[index]);
                         }}
                       />
                     </View>
+
+                    {nuevoRol === 'SECRETARIA' && (
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Oficina Asignada</Text>
+                        <SegmentedControl
+                          segments={['Central Uyuni', 'San Cristóbal']}
+                          selectedIndex={oficinaId === 1 ? 0 : 1}
+                          onChange={(index) => {
+                            setOficinaId(index === 0 ? 1 : 2);
+                          }}
+                        />
+                      </View>
+                    )}
 
                     <AnimatedPressable style={estilos.submitBtn} onPress={agregarUsuario}>
                       <Text style={estilos.submitBtnText}>Guardar Usuario</Text>
