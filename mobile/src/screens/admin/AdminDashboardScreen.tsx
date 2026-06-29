@@ -67,7 +67,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   const [destinoSeleccionado, setDestinoSeleccionado] = useState<string>('San Cristóbal');
   const [origenManual, setOrigenManual] = useState<string>('');
   const [destinoManual, setDestinoManual] = useState<string>('');
-  const [nuevaDuracion, setNuevaDuracion] = useState<string>('180');
+  const [nuevoPrecio, setNuevoPrecio] = useState<string>('35.00');
 
   // Campos Formulario - Viajes
   const [nuevoViajeRutaId, setNuevoViajeRutaId] = useState<string>('');
@@ -312,7 +312,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       nombre: nombreRutaFinal,
       origen: origenFinal,
       destino: destinoFinal,
-      minutos_estimados: parseInt(nuevaDuracion) || 180
+      precio: parseFloat(nuevoPrecio) || 0.00
     });
 
     if (error) {
@@ -323,7 +323,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       setDestinoSeleccionado('San Cristóbal');
       setOrigenManual('');
       setDestinoManual('');
-      setNuevaDuracion('180');
+      setNuevoPrecio('35.00');
       setMostrarFormularioAgregar(false);
       abrirModalGestion('rutas');
       cargarContadoresSistema();
@@ -685,7 +685,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                     )}
 
                     <TextInput style={estilos.modalInput} placeholder="Nombre Ruta (Opcional - ej: Uyuni - Potosi)" value={nuevoNombreRuta} onChangeText={setNuevoNombreRuta} />
-                    <TextInput style={estilos.modalInput} placeholder="Duración Estimada (Minutos)" value={nuevaDuracion} onChangeText={setNuevaDuracion} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="Precio / Costo (Bs. - ej: 35)" value={nuevoPrecio} onChangeText={setNuevoPrecio} keyboardType="numeric" />
                     <AnimatedPressable style={estilos.submitBtn} onPress={agregarRuta}>
                       <Text style={estilos.submitBtnText}>Guardar Ruta</Text>
                     </AnimatedPressable>
@@ -718,7 +718,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                     <Text style={estilos.alertDesc}>{item.placa} - {item.modelo} ({item.capacidad} as.)</Text>
                   )}
                   {tipoGestion === 'rutas' && (
-                    <Text style={estilos.alertDesc}>{item.nombre} - {item.minutos_estimados} min.</Text>
+                    <Text style={estilos.alertDesc}>{item.nombre} - Bs. {parseFloat(item.precio).toFixed(2)}</Text>
                   )}
                   {tipoGestion === 'viajes' && (
                     <Text style={estilos.alertDesc}>Ruta ID: {item.ruta_id} - Salida: {item.hora_salida} - {item.estado}</Text>

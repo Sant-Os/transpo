@@ -39,7 +39,7 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   const [tramoOrigen, setTramoOrigen] = useState<string>('Uyuni');
   const [tramoDestino, setTramoDestino] = useState<string>('San Cristóbal');
 
-  const [listaTramos, setListaTramos] = useState<Tramo[]>([]);
+  const [listaRutasTarifas, setListaRutasTarifas] = useState<any[]>([]);
   const [precioBoleto, setPrecioBoleto] = useState<number>(35.00);
   const [destinoSeleccionadoId, setDestinoSeleccionadoId] = useState<string | null>(null);
   const [asientosOcupados, setAsientosOcupados] = useState<number[]>([]);
@@ -122,17 +122,21 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         setViajeSeleccionadoId(viajes[0].id.toString());
       }
 
-      const { data: tramos } = await supabase
-        .from('tramos')
-        .select('*')
-        .order('indice_orden', { ascending: true });
+      const origenSecretaria = usuario?.oficina_id === 2 ? 'San Cristóbal' : 'Uyuni';
+      setTramoOrigen(origenSecretaria);
 
-      if (tramos && tramos.length > 0) {
-        setListaTramos(tramos as Tramo[]);
-        const ultimoTramo = tramos[tramos.length - 1];
-        setTramoDestino(ultimoTramo.destino);
-        setDestinoSeleccionadoId(ultimoTramo.id.toString());
-        setPrecioBoleto(parseFloat(ultimoTramo.precio));
+      const { data: rutasTarifas } = await supabase
+        .from('rutas')
+        .select('*')
+        .eq('origen', origenSecretaria)
+        .order('id', { ascending: true });
+
+      if (rutasTarifas && rutasTarifas.length > 0) {
+        setListaRutasTarifas(rutasTarifas);
+        const primeraTarifa = rutasTarifas[0];
+        setTramoDestino(primeraTarifa.destino);
+        setDestinoSeleccionadoId(primeraTarifa.id.toString());
+        setPrecioBoleto(parseFloat(primeraTarifa.precio));
       }
 
       const { data: cuentasCorp } = await supabase
@@ -307,7 +311,7 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         numero_asiento: asientoSeleccionado,
         nombre_pasajero: nombrePasajero,
         ci_pasajero: ciPasajero,
-        tramo_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
+        ruta_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
         precio_pagado: precioBoleto,
         estado: 'ACTIVO',
         vendido_por: usuarioActual?.id
@@ -336,7 +340,7 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         numero_asiento: asientoSeleccionado,
         nombre_pasajero: nombrePasajero,
         ci_pasajero: ciPasajero,
-        origen: 'Uyuni',
+        origen: tramoOrigen,
         destino: tramoDestino,
         precio_pagado: precioBoleto,
         fecha_viaje: viaje ? viaje.fecha_viaje : 'Hoy',
@@ -538,17 +542,21 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                   </View>
                 </View>
 
-                {/* Tramo de destino */}
-                <Text style={estilos.etiquetaCampo}>Destino</Text>
+                {/* Destino */}
+                <Text style={estilos.etiquetaCampo}>Destino (desde {tramoOrigen})</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                  {listaTramos.map((tramo) => (
+                  {listaRutasTarifas.map((rutaTarifa) => (
                     <AnimatedPressable
-                      key={tramo.id}
-                      style={[estilos.botonChip, destinoSeleccionadoId == tramo.id.toString() && estilos.botonChipActivo]}
-                      onPress={() => { setDestinoSeleccionadoId(tramo.id.toString()); setTramoDestino(tramo.destino); setPrecioBoleto(parseFloat(tramo.precio.toString())); }}
+                      key={rutaTarifa.id}
+                      style={[estilos.botonChip, destinoSeleccionadoId == rutaTarifa.id.toString() && estilos.botonChipActivo]}
+                      onPress={() => {
+                        setDestinoSeleccionadoId(rutaTarifa.id.toString());
+                        setTramoDestino(rutaTarifa.destino);
+                        setPrecioBoleto(parseFloat(rutaTarifa.precio.toString()));
+                      }}
                     >
-                      <Text style={[estilos.textoChip, destinoSeleccionadoId == tramo.id.toString() && estilos.textoChipActivo]}>
-                        {tramo.destino} — Bs. {tramo.precio}
+                      <Text style={[estilos.textoChip, destinoSeleccionadoId == rutaTarifa.id.toString() && estilos.textoChipActivo]}>
+                        {rutaTarifa.destino} — Bs. {parseFloat(rutaTarifa.precio).toFixed(2)}
                       </Text>
                     </AnimatedPressable>
                   ))}

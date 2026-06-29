@@ -33,7 +33,7 @@ export interface Ruta {
   nombre: string;
   origen: string;
   destino: string;
-  minutos_estimados: number;
+  precio: number;
 }
 
 export interface Tramo {
@@ -63,7 +63,7 @@ export interface Boleto {
   numero_asiento: number;
   nombre_pasajero: string;
   ci_pasajero: string;
-  tramo_destino_id?: number;
+  ruta_destino_id?: number;
   precio_pagado: number;
   estado: 'ACTIVO' | 'USADO' | 'CANCELADO';
   vendido_por: number;

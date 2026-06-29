@@ -65,14 +65,14 @@ CREATE TABLE public.vehiculos (
 );
 
 -- ============================================================
--- 4. RUTAS
+-- 4. RUTAS (Tarifario y Precios)
 -- ============================================================
 CREATE TABLE public.rutas (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   nombre TEXT NOT NULL,
   origen TEXT NOT NULL,
   destino TEXT NOT NULL,
-  minutos_estimados INTEGER NOT NULL,
+  precio NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   creado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -114,7 +114,7 @@ CREATE TABLE public.boletos (
   numero_asiento INTEGER NOT NULL,
   nombre_pasajero TEXT NOT NULL,
   ci_pasajero TEXT NOT NULL,
-  tramo_destino_id BIGINT REFERENCES public.tramos(id),
+  ruta_destino_id BIGINT REFERENCES public.rutas(id),
   precio_pagado NUMERIC(10, 2) NOT NULL,
   estado TEXT NOT NULL DEFAULT 'ACTIVO' CHECK (estado IN ('ACTIVO', 'USADO', 'CANCELADO')),
   vendido_por BIGINT REFERENCES public.usuarios(id),
@@ -309,15 +309,25 @@ INSERT INTO public.cuentas_corporativas (nombre_empresa) VALUES
   ('Empresa Metalúrgica Uyuni'),
   ('Cooperativa Turística Potosí');
 
--- 4. Registrar Ruta Base e Ida Completa
-INSERT INTO public.rutas (nombre, origen, destino, minutos_estimados) VALUES
-  ('Uyuni - San Cristóbal (Ida)', 'Uyuni', 'San Cristóbal', 180);
+-- 4. Registrar Tarifas y Precios Predefinidos de Rutas e Intermedios
+INSERT INTO public.rutas (nombre, origen, destino, precio) VALUES
+  ('Uyuni - Ramaditas', 'Uyuni', 'Ramaditas', 10.00),
+  ('Uyuni - Vila Vila', 'Uyuni', 'Vila Vila', 20.00),
+  ('Uyuni - San Cristóbal', 'Uyuni', 'San Cristóbal', 35.00),
+  ('Uyuni - Culpina', 'Uyuni', 'Culpina', 45.00),
+  ('Uyuni - Otro', 'Uyuni', 'Otro', 100.00),
+  ('San Cristóbal - Vila Vila', 'San Cristóbal', 'Vila Vila', 15.00),
+  ('San Cristóbal - Ramaditas', 'San Cristóbal', 'Ramaditas', 25.00),
+  ('San Cristóbal - Uyuni', 'San Cristóbal', 'Uyuni', 35.00),
+  ('San Cristóbal - Otro', 'San Cristóbal', 'Otro', 100.00),
+  ('Vila Vila - Uyuni', 'Vila Vila', 'Uyuni', 20.00),
+  ('Vila Vila - San Cristóbal', 'Vila Vila', 'San Cristóbal', 15.00),
+  ('Ramaditas - Uyuni', 'Ramaditas', 'Uyuni', 10.00),
+  ('Ramaditas - San Cristóbal', 'Ramaditas', 'San Cristóbal', 25.00);
 
+-- 5. Registrar Tramos Base (Para compatibilidad estructural)
 INSERT INTO public.tramos (ruta_id, origen, destino, indice_orden, precio, distancia_km) VALUES
-  (1, 'Uyuni', 'Ramaditas', 1, 10.00, 45),
-  (1, 'Ramaditas', 'Vila Vila', 2, 20.00, 60),
-  (1, 'Vila Vila', 'San Cristóbal', 3, 35.00, 75),
-  (1, 'San Cristóbal', 'Culpina', 4, 45.00, 110);
+  (3, 'Uyuni', 'San Cristóbal', 1, 35.00, 135);
 
 -- ============================================================
 -- HABILITAR TIEMPO REAL (Supabase Realtime)
