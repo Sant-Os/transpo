@@ -67,7 +67,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   const [destinoSeleccionado, setDestinoSeleccionado] = useState<string>('San Cristóbal');
   const [origenManual, setOrigenManual] = useState<string>('');
   const [destinoManual, setDestinoManual] = useState<string>('');
-  const [nuevoPrecio, setNuevoPrecio] = useState<string>('35.00');
+  const [nuevoPrecio, setNuevoPrecio] = useState<string>('35');
 
   // Campos Formulario - Viajes
   const [nuevoViajeRutaId, setNuevoViajeRutaId] = useState<string>('');
@@ -301,7 +301,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
   const agregarRuta = async () => {
     const origenFinal = origenSeleccionado === 'Otro' ? origenManual : origenSeleccionado;
     const destinoFinal = destinoSeleccionado === 'Otro' ? destinoManual : destinoSeleccionado;
-    const nombreRutaFinal = nuevoNombreRuta.trim() || `${origenFinal} - ${destinoFinal}`;
+    const nombreRutaFinal = `${origenFinal} - ${destinoFinal}`;
 
     if (!origenFinal || !destinoFinal) {
       alert('Por favor complete los campos obligatorios: Origen y Destino.');
@@ -312,7 +312,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       nombre: nombreRutaFinal,
       origen: origenFinal,
       destino: destinoFinal,
-      precio: parseFloat(nuevoPrecio) || 0.00
+      precio: parseInt(nuevoPrecio) || 0
     });
 
     if (error) {
@@ -323,7 +323,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
       setDestinoSeleccionado('San Cristóbal');
       setOrigenManual('');
       setDestinoManual('');
-      setNuevoPrecio('35.00');
+      setNuevoPrecio('35');
       setMostrarFormularioAgregar(false);
       abrirModalGestion('rutas');
       cargarContadoresSistema();
@@ -684,8 +684,18 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                       />
                     )}
 
-                    <TextInput style={estilos.modalInput} placeholder="Nombre Ruta (Opcional - ej: Uyuni - Potosi)" value={nuevoNombreRuta} onChangeText={setNuevoNombreRuta} />
-                    <TextInput style={estilos.modalInput} placeholder="Precio / Costo (Bs. - ej: 35)" value={nuevoPrecio} onChangeText={setNuevoPrecio} keyboardType="numeric" />
+                    <View style={[estilos.modalInput, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.separator, justifyContent: 'center' }]}>
+                      <Text style={{ ...typography.body, color: colors.text }}>
+                        Nombre: {origenSeleccionado === 'Otro' ? (origenManual || 'Otro') : origenSeleccionado} - {destinoSeleccionado === 'Otro' ? (destinoManual || 'Otro') : destinoSeleccionado}
+                      </Text>
+                    </View>
+                    <TextInput
+                      style={estilos.modalInput}
+                      placeholder="Costo (Bs. - ej: 35)"
+                      value={nuevoPrecio}
+                      onChangeText={(val) => setNuevoPrecio(val.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                    />
                     <AnimatedPressable style={estilos.submitBtn} onPress={agregarRuta}>
                       <Text style={estilos.submitBtnText}>Guardar Ruta</Text>
                     </AnimatedPressable>
@@ -718,7 +728,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                     <Text style={estilos.alertDesc}>{item.placa} - {item.modelo} ({item.capacidad} as.)</Text>
                   )}
                   {tipoGestion === 'rutas' && (
-                    <Text style={estilos.alertDesc}>{item.nombre} - Bs. {parseFloat(item.precio).toFixed(2)}</Text>
+                    <Text style={estilos.alertDesc}>{item.nombre} - Costo: {parseInt(item.precio)} Bs.</Text>
                   )}
                   {tipoGestion === 'viajes' && (
                     <Text style={estilos.alertDesc}>Ruta ID: {item.ruta_id} - Salida: {item.hora_salida} - {item.estado}</Text>
