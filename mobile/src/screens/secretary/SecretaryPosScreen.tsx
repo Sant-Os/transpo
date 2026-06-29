@@ -131,9 +131,19 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         .select('*, ruta:rutas(nombre, origen, destino), vehiculo:vehiculos(placa, modelo), chofer:usuarios(nombre_completo)')
         .order('hora_salida', { ascending: true });
 
-      if (viajes && viajes.length > 0) {
+      if (viajes) {
         setListaViajes(viajes);
-        setViajeSeleccionadoId(viajes[0].id.toString());
+        if (viajes.length > 0) {
+          const existe = viajes.some(v => v.id.toString() === viajeSeleccionadoId);
+          if (!existe || !viajeSeleccionadoId) {
+            setViajeSeleccionadoId(viajes[0].id.toString());
+          }
+        } else {
+          setViajeSeleccionadoId(null);
+        }
+      } else {
+        setListaViajes([]);
+        setViajeSeleccionadoId(null);
       }
 
       const origenSecretaria = usuario?.oficina_id === 2 ? 'San Cristóbal' : 'Uyuni';
@@ -178,8 +188,9 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         .eq('activo', true)
         .order('nombre_completo', { ascending: true });
       if (choferes) setListaChoferes(choferes);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      mostrarToast('Error al cargar datos: ' + e.message, 'error');
     } finally {
       setCargando(false);
     }
@@ -250,8 +261,9 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
           setEgresosOficina(exp);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      mostrarToast('Error al obtener detalles: ' + e.message, 'error');
     }
   };
 
