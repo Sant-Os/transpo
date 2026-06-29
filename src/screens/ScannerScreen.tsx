@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, CameraView } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
 
-export default function ScannerScreen({ navigation }) {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [scanned, setScanned] = useState(false);
+export interface ScannerScreenProps {
+  navigation: any;
+}
 
-  useEffect(() => {
-    const getCameraPermissions = async () => {
-      const { status } = await CameraView.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    };
-    getCameraPermissions();
-  }, []);
+export interface BarCodeScannedEvent {
+  type: string;
+  data: string;
+}
 
-  const handleBarCodeScanned = async ({ type, data }) => {
+export default function ScannerScreen({ navigation }: ScannerScreenProps) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState<boolean>(false);
+
+  const handleBarCodeScanned = async ({ type, data }: BarCodeScannedEvent) => {
     setScanned(true);
     try {
       // Buscar y actualizar encomienda por id o por código qr
-      const isNumber = !isNaN(data);
+      const isNumber = !isNaN(Number(data));
       let query = supabase.from('parcels').update({ status: 'IN_TRANSIT' });
       
       if (isNumber) {
@@ -41,7 +42,7 @@ export default function ScannerScreen({ navigation }) {
       } else {
         alert(`Escaneado: "${data}"\n(No se encontró encomienda registrada en la base de datos)`);
       }
-    } catch (e) {
+    } catch (e: any) {
       alert('Error procesando escaneo: ' + e.message);
     } finally {
       setTimeout(() => {
@@ -50,14 +51,14 @@ export default function ScannerScreen({ navigation }) {
     }
   };
 
-  if (hasPermission === null) {
-    return <View style={styles.container}><Text>Solicitando permiso de cámara...</Text></View>;
+  if (!permission) {
+    return <View style={styles.centerContainer}><Text>Cargando permisos...</Text></View>;
   }
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
-      <View style={styles.container}>
+      <View style={styles.centerContainer}>
         <Text style={{ textAlign: 'center', marginBottom: 16 }}>No se tiene acceso a la cámara</Text>
-        <Button title="Intentar nuevamente" onPress={() => CameraView.requestCameraPermissionsAsync()} />
+        <Button title="Conceder Permiso" onPress={requestPermission} />
       </View>
     );
   }
@@ -96,16 +97,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: colors.background,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     ...typography.h3,
     color: colors.text,
+    fontFamily: typography.fontFamilyBold,
   },
   camera: {
     flex: 1,
@@ -119,15 +131,16 @@ const styles = StyleSheet.create({
   scanFrame: {
     width: 250,
     height: 250,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: colors.primary,
+    borderRadius: 24,
     backgroundColor: 'transparent',
   },
   overlayText: {
-    ...typography.body,
+    ...typography.caption,
     color: '#FFF',
     marginTop: 24,
     textAlign: 'center',
     paddingHorizontal: 32,
-  }
+  },
 });

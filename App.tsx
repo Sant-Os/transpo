@@ -6,7 +6,7 @@ import * as Font from 'expo-font';
 import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Import Screens (to be created)
+// Import Screens (TypeScript versions)
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SecretaryPosScreen from './src/screens/secretary/SecretaryPosScreen';
 import DriverDashboardScreen from './src/screens/driver/DriverDashboardScreen';
@@ -18,7 +18,7 @@ import ChatScreen from './src/screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadFonts() {

@@ -6,16 +6,35 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
 import { AuthService } from '../services/AuthService';
+import { User } from '../types';
 
-export default function ChatScreen({ navigation }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeChannel, setActiveChannel] = useState('GENERAL'); // 'GENERAL' | 'OPERATIONS'
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+export interface ChatScreenProps {
+  navigation: any;
+}
 
-  const scrollViewRef = useRef();
+export interface MessageSender {
+  full_name: string;
+  role: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  channel: 'GENERAL' | 'OPERATIONS' | string;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  sender?: MessageSender;
+}
+
+export default function ChatScreen({ navigation }: ChatScreenProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [activeChannel, setActiveChannel] = useState<'GENERAL' | 'OPERATIONS'>('GENERAL'); // 'GENERAL' | 'OPERATIONS'
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadUserAndMessages();
@@ -32,7 +51,7 @@ export default function ChatScreen({ navigation }) {
           table: 'messages', 
           filter: `channel=eq.${activeChannel}` 
         },
-        async (payload) => {
+        async () => {
           // Recargar mensajes al recibir uno nuevo instantáneamente
           fetchMessages(activeChannel, false);
         }
@@ -56,7 +75,7 @@ export default function ChatScreen({ navigation }) {
     setLoading(false);
   };
 
-  const fetchMessages = async (channel, showLoading = false) => {
+  const fetchMessages = async (channel: 'GENERAL' | 'OPERATIONS', showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
       const { data, error } = await supabase
@@ -66,8 +85,8 @@ export default function ChatScreen({ navigation }) {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      if (data) setMessages(data);
-    } catch (e) {
+      if (data) setMessages(data as ChatMessage[]);
+    } catch (e: any) {
       console.error('Error cargando chat:', e.message);
     } finally {
       if (showLoading) setLoading(false);
@@ -102,7 +121,7 @@ export default function ChatScreen({ navigation }) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    } catch (e) {
+    } catch (e: any) {
       alert('Error enviando mensaje: ' + e.message);
     }
   };
@@ -301,7 +320,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 32,
   },
-  // Messages bubbles
   messageBubbleContainer: {
     marginBottom: 16,
     maxWidth: '80%',
@@ -355,7 +373,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginHorizontal: 6,
   },
-  // Input area
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',

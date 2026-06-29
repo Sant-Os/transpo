@@ -7,63 +7,69 @@ import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
 import SeatMap from '../../components/SeatMap';
+import { User, Trip, Segment, Ticket, CashRegister } from '../../types';
 
-export default function SecretaryPosScreen({ navigation }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('pasajes'); // 'pasajes' | 'encomiendas' | 'caja'
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+export interface SecretaryPosScreenProps {
+  navigation: any;
+}
+
+export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<'pasajes' | 'encomiendas' | 'salidas' | 'caja'>('pasajes');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // Datos comunes
-  const [tripsList, setTripsList] = useState([]);
-  const [selectedTripId, setSelectedTripId] = useState(null);
+  const [tripsList, setTripsList] = useState<any[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+
   // TAB 1: Pasajes
-  const [selectedSeat, setSelectedSeat] = useState(null);
-  const [passengerName, setPassengerName] = useState('');
-  const [passengerCI, setPassengerCI] = useState('');
-  const [startSegment, setStartSegment] = useState('Uyuni');
-  const [endSegment, setEndSegment] = useState('San Cristóbal');
+  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [passengerName, setPassengerName] = useState<string>('');
+  const [passengerCI, setPassengerCI] = useState<string>('');
+  const [startSegment, setStartSegment] = useState<string>('Uyuni');
+  const [endSegment, setEndSegment] = useState<string>('San Cristóbal');
 
   // Dynamic booking details
-  const [segmentsList, setSegmentsList] = useState([]);
-  const [ticketPrice, setTicketPrice] = useState(35.00);
-  const [selectedDestId, setSelectedDestId] = useState(null);
-  const [occupiedSeats, setOccupiedSeats] = useState([]);
+  const [segmentsList, setSegmentsList] = useState<Segment[]>([]);
+  const [ticketPrice, setTicketPrice] = useState<number>(35.00);
+  const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
+  const [occupiedSeats, setOccupiedSeats] = useState<number[]>([]);
   
   // Modal de Boleto Digital
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [lastSoldTicket, setLastSoldTicket] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
+  const [lastSoldTicket, setLastSoldTicket] = useState<any>(null);
 
   // TAB 2: Encomiendas
-  const [senderName, setSenderName] = useState('');
-  const [senderCI, setSenderCI] = useState('');
-  const [senderPhone, setSenderPhone] = useState('');
-  const [receiverName, setReceiverName] = useState('');
-  const [receiverCI, setReceiverCI] = useState('');
-  const [receiverPhone, setReceiverPhone] = useState('');
-  const [parcelDesc, setParcelDesc] = useState('');
-  const [parcelWeight, setParcelWeight] = useState('');
-  const [parcelPrice, setParcelPrice] = useState('');
-  const [parcelsList, setParcelsList] = useState([]);
+  const [senderName, setSenderName] = useState<string>('');
+  const [senderCI, setSenderCI] = useState<string>('');
+  const [senderPhone, setSenderPhone] = useState<string>('');
+  const [receiverName, setReceiverName] = useState<string>('');
+  const [receiverCI, setReceiverCI] = useState<string>('');
+  const [receiverPhone, setReceiverPhone] = useState<string>('');
+  const [parcelDesc, setParcelDesc] = useState<string>('');
+  const [parcelWeight, setParcelWeight] = useState<string>('');
+  const [parcelPrice, setParcelPrice] = useState<string>('');
+  const [parcelsList, setParcelsList] = useState<any[]>([]);
 
   // TAB 3: Caja y Gastos
-  const [expenseConcept, setExpenseConcept] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [mySalesToday, setMySalesToday] = useState([]);
-  const [officeIncomes, setOfficeIncomes] = useState(0);
-  const [officeExpenses, setOfficeExpenses] = useState(0);
+  const [expenseConcept, setExpenseConcept] = useState<string>('');
+  const [expenseAmount, setExpenseAmount] = useState<string>('');
+  const [mySalesToday, setMySalesToday] = useState<any[]>([]);
+  const [officeIncomes, setOfficeIncomes] = useState<number>(0);
+  const [officeExpenses, setOfficeExpenses] = useState<number>(0);
 
   // Cuentas Corporativas
-  const [corporateAccountsList, setCorporateAccountsList] = useState([]);
-  const [selectedCorpId, setSelectedCorpId] = useState(null);
-  const [isCorporate, setIsCorporate] = useState(false);
+  const [corporateAccountsList, setCorporateAccountsList] = useState<any[]>([]);
+  const [selectedCorpId, setSelectedCorpId] = useState<string | null>(null);
+  const [isCorporate, setIsCorporate] = useState<boolean>(false);
 
   // Apertura y Cierre de Caja
-  const [cashRegister, setCashRegister] = useState(null);
-  const [initialCashInput, setInitialCashInput] = useState('100.00');
-  const [showCashOpenModal, setShowCashOpenModal] = useState(false);
-  const [showCashCloseModal, setShowCashCloseModal] = useState(false);
-  const [finalCashInput, setFinalCashInput] = useState('0.00');
+  const [cashRegister, setCashRegister] = useState<CashRegister | null>(null);
+  const [initialCashInput, setInitialCashInput] = useState<string>('100.00');
+  const [showCashOpenModal, setShowCashOpenModal] = useState<boolean>(false);
+  const [showCashCloseModal, setShowCashCloseModal] = useState<boolean>(false);
+  const [finalCashInput, setFinalCashInput] = useState<string>('0.00');
 
   useEffect(() => {
     loadInitialData();
@@ -86,7 +92,7 @@ export default function SecretaryPosScreen({ navigation }) {
           .maybeSingle();
 
         if (activeReg) {
-          setCashRegister(activeReg);
+          setCashRegister(activeReg as CashRegister);
         } else {
           setShowCashOpenModal(true);
         }
@@ -110,7 +116,7 @@ export default function SecretaryPosScreen({ navigation }) {
         .order('order_index', { ascending: true });
       
       if (segments && segments.length > 0) {
-        setSegmentsList(segments);
+        setSegmentsList(segments as Segment[]);
         const lastSeg = segments[segments.length - 1];
         setEndSegment(lastSeg.destination);
         setSelectedDestId(lastSeg.id.toString());
@@ -178,6 +184,7 @@ export default function SecretaryPosScreen({ navigation }) {
   }, [selectedTripId]);
 
   const fetchTripDetails = async () => {
+    if (!selectedTripId) return;
     try {
       // Asientos ocupados
       const { data: tickets } = await supabase
@@ -187,7 +194,7 @@ export default function SecretaryPosScreen({ navigation }) {
         .eq('status', 'ACTIVE');
       
       if (tickets) {
-        setOccupiedSeats(tickets.map(t => t.seat_number));
+        setOccupiedSeats(tickets.map((t: any) => t.seat_number));
       } else {
         setOccupiedSeats([]);
       }
@@ -216,8 +223,8 @@ export default function SecretaryPosScreen({ navigation }) {
           .eq('user_id', currentUser.id);
 
         if (finances) {
-          const inc = finances.filter(f => f.type === 'INCOME').reduce((sum, f) => sum + parseFloat(f.amount), 0);
-          const exp = finances.filter(f => f.type === 'EXPENSE').reduce((sum, f) => sum + parseFloat(f.amount), 0);
+          const inc = finances.filter((f: any) => f.type === 'INCOME').reduce((sum, f) => sum + parseFloat(f.amount), 0);
+          const exp = finances.filter((f: any) => f.type === 'EXPENSE').reduce((sum, f) => sum + parseFloat(f.amount), 0);
           setOfficeIncomes(inc);
           setOfficeExpenses(exp);
         }
@@ -249,10 +256,10 @@ export default function SecretaryPosScreen({ navigation }) {
         .select()
         .single();
       if (error) throw error;
-      setCashRegister(data);
+      setCashRegister(data as CashRegister);
       setShowCashOpenModal(false);
       alert('Caja abierta con éxito');
-    } catch (e) {
+    } catch (e: any) {
       alert('Error abriendo caja: ' + e.message);
     } finally {
       setLoading(false);
@@ -276,7 +283,7 @@ export default function SecretaryPosScreen({ navigation }) {
       setShowCashCloseModal(false);
       alert('Caja cerrada con éxito');
       setShowCashOpenModal(true);
-    } catch (e) {
+    } catch (e: any) {
       alert('Error cerrando caja: ' + e.message);
     } finally {
       setLoading(false);
@@ -300,7 +307,7 @@ export default function SecretaryPosScreen({ navigation }) {
     alert(`Enlace de WhatsApp generado:\n\nhttps://wa.me/?text=${encodeURIComponent(message)}`);
   };
 
-  const handleSeatPress = (seatNumber, status) => {
+  const handleSeatPress = (seatNumber: number, status: string) => {
     if (status !== 'free') {
       alert(`El asiento ${seatNumber} no está disponible.`);
       return;
@@ -308,7 +315,6 @@ export default function SecretaryPosScreen({ navigation }) {
     setSelectedSeat(seatNumber);
   };
 
-  // Vender Boleto
   const handlePurchase = async () => {
     if (!selectedSeat || !passengerName || !passengerCI || !selectedTripId) {
       alert("Por favor complete todos los campos de pasajero y asiento");
@@ -318,7 +324,6 @@ export default function SecretaryPosScreen({ navigation }) {
     try {
       setLoading(true);
       const trip = tripsList.find(t => t.id.toString() === selectedTripId);
-
       const selectedCorp = isCorporate ? corporateAccountsList.find(c => c.id.toString() === selectedCorpId) : null;
       
       const ticketInsert = {
@@ -340,7 +345,7 @@ export default function SecretaryPosScreen({ navigation }) {
 
       if (error) throw error;
 
-      // Registrar movimiento de ingreso (especificando si es convenio corp)
+      // Registrar movimiento de ingreso
       await supabase.from('finances').insert({
         trip_id: parseInt(selectedTripId),
         user_id: currentUser?.id,
@@ -351,7 +356,6 @@ export default function SecretaryPosScreen({ navigation }) {
         type: 'INCOME'
       });
 
-      // Guardar información del boleto vendido para el recibo modal
       setLastSoldTicket({
         id: data.id,
         seat_number: selectedSeat,
@@ -368,22 +372,20 @@ export default function SecretaryPosScreen({ navigation }) {
 
       setShowReceiptModal(true);
 
-      // Limpiar formulario pasajes
       setSelectedSeat(null);
       setPassengerName('');
       setPassengerCI('');
       fetchTripDetails();
-    } catch (e) {
+    } catch (e: any) {
       alert('Error vendiendo pasaje: ' + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Registrar Encomienda
   const handleRegisterParcel = async () => {
     if (!senderName || !receiverName || !parcelDesc || !parcelPrice || !selectedTripId) {
-      alert('Por favor complete los datos de la encomienda (remitente, destinatario, detalle y costo)');
+      alert('Por favor complete los datos de la encomienda');
       return;
     }
 
@@ -409,7 +411,6 @@ export default function SecretaryPosScreen({ navigation }) {
 
       if (error) throw error;
 
-      // Registrar movimiento de ingreso
       await supabase.from('finances').insert({
         trip_id: parseInt(selectedTripId),
         user_id: currentUser?.id,
@@ -420,7 +421,6 @@ export default function SecretaryPosScreen({ navigation }) {
 
       alert(`Encomienda registrada con éxito!\nCódigo QR asignado: ${randomQR}`);
 
-      // Limpiar formulario encomiendas
       setSenderName('');
       setSenderCI('');
       setSenderPhone('');
@@ -431,14 +431,13 @@ export default function SecretaryPosScreen({ navigation }) {
       setParcelWeight('');
       setParcelPrice('');
       fetchTripDetails();
-    } catch (e) {
+    } catch (e: any) {
       alert('Error al registrar encomienda: ' + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Registrar Gasto
   const handleRegisterExpense = async () => {
     if (!expenseConcept || !expenseAmount) {
       alert('Ingrese concepto y monto del gasto');
@@ -461,18 +460,16 @@ export default function SecretaryPosScreen({ navigation }) {
       setExpenseConcept('');
       setExpenseAmount('');
       fetchTripDetails();
-    } catch (e) {
+    } catch (e: any) {
       alert('Error al registrar gasto: ' + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Anular boleto vendido
-  const handleCancelTicket = async (ticketId, pricePaid) => {
+  const handleCancelTicket = async (ticketId: number, pricePaid: number) => {
     try {
       setLoading(true);
-      // Actualizar estado del ticket
       const { error } = await supabase
         .from('tickets')
         .update({ status: 'CANCELLED' })
@@ -480,18 +477,17 @@ export default function SecretaryPosScreen({ navigation }) {
 
       if (error) throw error;
 
-      // Registrar movimiento de egreso compensatorio
       await supabase.from('finances').insert({
         trip_id: selectedTripId ? parseInt(selectedTripId) : null,
         user_id: currentUser?.id,
         concept: `Anulación de boleto #${ticketId}`,
-        amount: parseFloat(pricePaid),
+        amount: pricePaid,
         type: 'EXPENSE'
       });
 
       alert('Boleto anulado y reembolsado');
       fetchTripDetails();
-    } catch (e) {
+    } catch (e: any) {
       alert('Error anulando boleto: ' + e.message);
     } finally {
       setLoading(false);
@@ -504,8 +500,7 @@ export default function SecretaryPosScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  // Render Seat Status Map
-  const seatStatusData = {};
+  const seatStatusData: Record<number, string> = {};
   occupiedSeats.forEach(seat => {
     seatStatusData[seat] = 'occupied';
   });
@@ -575,7 +570,7 @@ export default function SecretaryPosScreen({ navigation }) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
         >
-          {/* SELECCIONAR VIAJE ACTIVO AL INICIO DE LA PESTAÑA */}
+          {/* SELECCIONAR VIAJE ACTIVO */}
           <View style={[styles.card, { marginBottom: 16 }]}>
             <Text style={styles.label}>Seleccionar Viaje Activo</Text>
             {tripsList.length === 0 ? (
@@ -608,18 +603,16 @@ export default function SecretaryPosScreen({ navigation }) {
           {/* ========================================================= */}
           {activeTab === 'pasajes' && (
             <View style={styles.contentLayout}>
-              {/* Lado Izquierdo: Asientos */}
               <View style={styles.mapSection}>
                 <Text style={styles.sectionTitle}>Selección de Asiento</Text>
                 <SeatMap seatsData={seatStatusData} onSeatPress={handleSeatPress} />
               </View>
 
-              {/* Lado Derecho: Formulario */}
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Detalles de Pasaje</Text>
                 <View style={styles.card}>
                   <View style={styles.seatBadgeContainer}>
-                    <Text style={styles.seatBadgeLabel}>Asiento Seleccionado</Text>
+                    <Text style={styles.seatBadgeLabel}>Asiento</Text>
                     <View style={styles.seatBadge}>
                       <Text style={styles.seatBadgeText}>
                         {selectedSeat ? `#${selectedSeat}` : 'Ninguno'}
@@ -640,7 +633,7 @@ export default function SecretaryPosScreen({ navigation }) {
                           onPress={() => {
                             setSelectedDestId(seg.id.toString());
                             setEndSegment(seg.destination);
-                            setTicketPrice(parseFloat(seg.price));
+                            setTicketPrice(parseFloat(seg.price.toString()));
                           }}
                         >
                           <Text style={[
@@ -708,7 +701,7 @@ export default function SecretaryPosScreen({ navigation }) {
                       placeholder="Ej. 1234567-LP"
                       placeholderTextColor={colors.textSecondary}
                       value={passengerCI}
-                      onChangeText={passengerCI => setPassengerCI(passengerCI)}
+                      onChangeText={setPassengerCI}
                       autoCapitalize="characters"
                     />
                   </View>
@@ -720,12 +713,12 @@ export default function SecretaryPosScreen({ navigation }) {
                       placeholder="Nombre Completo"
                       placeholderTextColor={colors.textSecondary}
                       value={passengerName}
-                      onChangeText={passengerName => setPassengerName(passengerName)}
+                      onChangeText={setPassengerName}
                     />
                   </View>
 
                   <View style={styles.priceContainer}>
-                    <Text style={styles.priceLabel}>Monto total a Pagar</Text>
+                    <Text style={styles.priceLabel}>Monto total</Text>
                     <Text style={styles.priceValue}>Bs. {ticketPrice.toFixed(2)}</Text>
                   </View>
 
@@ -758,22 +751,24 @@ export default function SecretaryPosScreen({ navigation }) {
                     value={senderName}
                     onChangeText={setSenderName}
                   />
+                </View>
+                <View style={styles.formRow}>
                   <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 8, marginLeft: 8 }]}
-                    placeholder="C.I. Remitente"
+                    style={[styles.input, { flex: 1, marginRight: 8 }]}
+                    placeholder="C.I."
                     placeholderTextColor={colors.textSecondary}
                     value={senderCI}
                     onChangeText={setSenderCI}
                   />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Teléfono"
+                    placeholderTextColor={colors.textSecondary}
+                    value={senderPhone}
+                    onChangeText={setSenderPhone}
+                    keyboardType="phone-pad"
+                  />
                 </View>
-                <TextInput
-                  style={[styles.input, { marginBottom: 16 }]}
-                  placeholder="Teléfono Remitente"
-                  placeholderTextColor={colors.textSecondary}
-                  value={senderPhone}
-                  onChangeText={setSenderPhone}
-                  keyboardType="phone-pad"
-                />
 
                 <Text style={styles.formSubtitleHeader}>Datos del Destinatario (Recibe)</Text>
                 <View style={styles.formRow}>
@@ -784,34 +779,38 @@ export default function SecretaryPosScreen({ navigation }) {
                     value={receiverName}
                     onChangeText={setReceiverName}
                   />
+                </View>
+                <View style={styles.formRow}>
                   <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 8, marginLeft: 8 }]}
+                    style={[styles.input, { flex: 1, marginRight: 8 }]}
                     placeholder="C.I. Destinatario"
                     placeholderTextColor={colors.textSecondary}
                     value={receiverCI}
                     onChangeText={setReceiverCI}
                   />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Teléfono"
+                    placeholderTextColor={colors.textSecondary}
+                    value={receiverPhone}
+                    onChangeText={setReceiverPhone}
+                    keyboardType="phone-pad"
+                  />
                 </View>
-                <TextInput
-                  style={[styles.input, { marginBottom: 16 }]}
-                  placeholder="Teléfono Destinatario"
-                  placeholderTextColor={colors.textSecondary}
-                  value={receiverPhone}
-                  onChangeText={setReceiverPhone}
-                  keyboardType="phone-pad"
-                />
 
                 <Text style={styles.formSubtitleHeader}>Detalles del Envío</Text>
-                <TextInput
-                  style={[styles.input, { marginBottom: 12 }]}
-                  placeholder="Detalle o descripción (ej. Caja con repuestos)"
-                  placeholderTextColor={colors.textSecondary}
-                  value={parcelDesc}
-                  onChangeText={setParcelDesc}
-                />
                 <View style={styles.formRow}>
                   <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 16 }]}
+                    style={[styles.input, { flex: 1, marginRight: 8 }]}
+                    placeholder="Descripción (ej. Caja de repuestos)"
+                    placeholderTextColor={colors.textSecondary}
+                    value={parcelDesc}
+                    onChangeText={setParcelDesc}
+                  />
+                </View>
+                <View style={[styles.formRow, { marginTop: 8, marginBottom: 16 }]}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginRight: 8 }]}
                     placeholder="Peso (Kg)"
                     placeholderTextColor={colors.textSecondary}
                     value={parcelWeight}
@@ -819,8 +818,8 @@ export default function SecretaryPosScreen({ navigation }) {
                     keyboardType="numeric"
                   />
                   <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 16, marginLeft: 8 }]}
-                    placeholder="Costo de Envío (Bs.)"
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Costo Envío (Bs.)"
                     placeholderTextColor={colors.textSecondary}
                     value={parcelPrice}
                     onChangeText={setParcelPrice}
@@ -994,7 +993,7 @@ export default function SecretaryPosScreen({ navigation }) {
                 <TouchableOpacity 
                   style={[styles.buyButton, { backgroundColor: colors.danger, marginBottom: 24 }]}
                   onPress={() => {
-                    const expected = parseFloat(cashRegister.initial_amount) + officeIncomes - officeExpenses;
+                    const expected = parseFloat(cashRegister.initial_amount.toString()) + officeIncomes - officeExpenses;
                     setFinalCashInput(expected.toFixed(2));
                     setShowCashCloseModal(true);
                   }}
@@ -1028,28 +1027,30 @@ export default function SecretaryPosScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-              {/* Historial de ventas */}
-              <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Mis Ventas de Hoy ({mySalesToday.length})</Text>
+              <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Ventas del Turno ({mySalesToday.length})</Text>
               {mySalesToday.length === 0 ? (
                 <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>No has vendido boletos hoy</Text>
+                  <Text style={styles.emptyText}>No has realizado ventas en este turno</Text>
                 </View>
               ) : (
-                mySalesToday.map(sale => (
+                mySalesToday.map((sale) => (
                   <View key={sale.id} style={styles.recordCard}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.recordTitle}>Pasajero: {sale.passenger_name}</Text>
-                      <Text style={styles.recordSub}>Destino: {sale.destination || 'San Cristóbal'} | Asiento: #{sale.seat_number}</Text>
-                      <Text style={styles.recordSub}>Monto: Bs. {parseFloat(sale.price_paid).toFixed(2)}</Text>
-                      <Text style={styles.recordSub}>Estado: {sale.status === 'ACTIVE' ? '🟢 Activo' : '🔴 Anulado'}</Text>
+                      <Text style={styles.recordTitle}>Asiento #{sale.seat_number} - {sale.passenger_name}</Text>
+                      <Text style={styles.recordSub}>Ruta: {sale.trip?.route?.name} | Salida: {sale.trip?.departure_time?.substring(0, 5)}</Text>
+                      <Text style={styles.recordSub}>Costo: Bs. {parseFloat(sale.price_paid).toFixed(2)}</Text>
                     </View>
-                    {sale.status === 'ACTIVE' && (
+                    {sale.status === 'ACTIVE' ? (
                       <TouchableOpacity 
                         style={styles.cancelTicketBtn}
-                        onPress={() => handleCancelTicket(sale.id, sale.price_paid)}
+                        onPress={() => handleCancelTicket(sale.id, parseFloat(sale.price_paid))}
                       >
                         <Text style={styles.cancelTicketText}>Anular</Text>
                       </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.statusBadge, { backgroundColor: colors.danger }]}>
+                        <Text style={styles.statusBadgeText}>Anulado</Text>
+                      </View>
                     )}
                   </View>
                 ))
@@ -1059,9 +1060,7 @@ export default function SecretaryPosScreen({ navigation }) {
         </ScrollView>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL DE BOLETO DIGITAL (SIMULACIÓN DE RECIBO DE IMPRESIÓN) */}
-      {/* ========================================================= */}
+      {/* MODAL DE BOLETO DIGITAL */}
       <Modal
         visible={showReceiptModal}
         transparent={true}
@@ -1123,13 +1122,11 @@ export default function SecretaryPosScreen({ navigation }) {
 
             <View style={styles.receiptDivider} />
 
-            {/* Simulación gráfica de códigos */}
             <View style={styles.barcodeContainer}>
               <View style={styles.fakeBarcode} />
               <Text style={{ fontSize: 9, color: colors.textSecondary, marginTop: 4 }}>* BOLETO DIGITAL GENERADO *</Text>
             </View>
 
-            {/* Botones de acción */}
             <View style={styles.modalActionRow}>
               <TouchableOpacity 
                 style={[styles.modalActionBtn, { backgroundColor: colors.primary }]}
@@ -1161,9 +1158,7 @@ export default function SecretaryPosScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* ========================================================= */}
       {/* MODAL: APERTURA DE CAJA */}
-      {/* ========================================================= */}
       <Modal
         visible={showCashOpenModal && !cashRegister}
         transparent={true}
@@ -1195,9 +1190,7 @@ export default function SecretaryPosScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* ========================================================= */}
       {/* MODAL: CIERRE DE CAJA */}
-      {/* ========================================================= */}
       <Modal
         visible={showCashCloseModal}
         transparent={true}
@@ -1215,7 +1208,7 @@ export default function SecretaryPosScreen({ navigation }) {
             <View style={{ width: '100%', marginBottom: 16 }}>
               <View style={styles.receiptRow}>
                 <Text style={styles.receiptLabel}>Saldo Inicial:</Text>
-                <Text style={styles.receiptValue}>Bs. {parseFloat(cashRegister?.initial_amount || 0).toFixed(2)}</Text>
+                <Text style={styles.receiptValue}>Bs. {parseFloat(cashRegister?.initial_amount.toString() || '0').toFixed(2)}</Text>
               </View>
               <View style={styles.receiptRow}>
                 <Text style={styles.receiptLabel}>Ingresos:</Text>
@@ -1229,7 +1222,7 @@ export default function SecretaryPosScreen({ navigation }) {
               <View style={styles.receiptRow}>
                 <Text style={styles.receiptLabel}>Esperado en Caja:</Text>
                 <Text style={styles.receiptValueBold}>
-                  Bs. {(parseFloat(cashRegister?.initial_amount || 0) + officeIncomes - officeExpenses).toFixed(2)}
+                  Bs. {(parseFloat(cashRegister?.initial_amount.toString() || '0') + officeIncomes - officeExpenses).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -1279,6 +1272,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.h2,
     color: colors.text,
+    fontFamily: typography.fontFamilyBold,
   },
   headerSubtitle: {
     ...typography.caption,
@@ -1293,11 +1287,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  // Tab Bar
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: colors.card,
@@ -1326,111 +1315,22 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: colors.primary,
   },
-  // Layout
-  contentLayout: {
-    flexDirection: Platform.OS === 'web' || Platform.isPad ? 'row' : 'column',
-    gap: 16,
-  },
-  mapSection: {
-    flex: 1.2,
-    minWidth: 300,
-  },
-  formSection: {
-    flex: 1,
-    minWidth: 300,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 12,
-    marginTop: 8,
-    fontFamily: typography.fontFamilyBold,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  seatBadgeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  seatBadgeLabel: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  seatBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  seatBadgeText: {
-    ...typography.h3,
-    color: '#FFF',
-  },
-  inputGroup: {
-    marginBottom: 16,
   },
   label: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    ...typography.body,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 12,
-    color: colors.text,
-    backgroundColor: colors.background,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  priceLabel: {
-    ...typography.body,
-    color: colors.text,
-  },
-  priceValue: {
-    ...typography.h1,
-    color: colors.success,
-  },
-  buyButton: {
-    flexDirection: 'row',
-    backgroundColor: colors.success,
-    borderRadius: 12,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buyButtonDisabled: {
-    backgroundColor: colors.border,
-  },
-  buyButtonText: {
-    ...typography.body,
     fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
+    marginBottom: 8,
   },
   selectionBtn: {
     paddingHorizontal: 12,
@@ -1453,7 +1353,93 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontFamily: typography.fontFamilyBold,
   },
-  // Form Row (Encomiendas)
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    fontFamily: typography.fontFamilyBold,
+    marginBottom: 12,
+  },
+  contentLayout: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  mapSection: {
+    width: '100%',
+  },
+  formSection: {
+    width: '100%',
+  },
+  seatBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  seatBadgeLabel: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: colors.text,
+  },
+  seatBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  seatBadgeText: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: '#FFF',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  input: {
+    ...typography.body,
+    fontFamily: typography.fontFamily,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
+    color: colors.text,
+    backgroundColor: colors.background,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  priceLabel: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: colors.text,
+  },
+  priceValue: {
+    ...typography.h2,
+    fontFamily: typography.fontFamilyBold,
+    color: colors.success,
+  },
+  buyButton: {
+    flexDirection: 'row',
+    height: 50,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buyButtonDisabled: {
+    backgroundColor: colors.border,
+  },
+  buyButtonText: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: '#FFF',
+  },
+  // Tab Encomiendas form
   formSubtitleHeader: {
     ...typography.caption,
     color: colors.primary,
@@ -1464,7 +1450,6 @@ const styles = StyleSheet.create({
   formRow: {
     flexDirection: 'row',
   },
-  // Records Lists
   recordCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
@@ -1495,7 +1480,75 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamilyBold,
     color: '#FFF',
   },
-  // Balance
+  // Kanban
+  kanbanContainer: {
+    flexDirection: 'column',
+    gap: 16,
+    marginTop: 12,
+  },
+  kanbanColumn: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  kanbanColumnTitle: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    fontSize: 15,
+    borderBottomWidth: 3,
+    paddingBottom: 8,
+    marginBottom: 12,
+    color: colors.text,
+  },
+  kanbanCard: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  kanbanCardTitle: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: colors.text,
+  },
+  kanbanCardSub: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  kanbanActionBtn: {
+    borderRadius: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  kanbanActionBtnText: {
+    ...typography.caption,
+    fontFamily: typography.fontFamilyBold,
+    color: '#FFF',
+  },
+  kanbanBadgeEnRuta: {
+    backgroundColor: colors.success,
+    borderRadius: 6,
+    paddingVertical: 6,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  kanbanBadgeTextEnRuta: {
+    ...typography.caption,
+    fontFamily: typography.fontFamilyBold,
+    color: '#FFF',
+  },
+  kanbanEmpty: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginVertical: 16,
+  },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1608,7 +1661,7 @@ const styles = StyleSheet.create({
   fakeBarcode: {
     width: 200,
     height: 45,
-    backgroundColor: '#1C1C1E', // Falsa barra simulada de código de barras
+    backgroundColor: '#1C1C1E',
   },
   modalActionRow: {
     flexDirection: 'row',
@@ -1648,74 +1701,5 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     ...typography.caption,
     color: colors.textSecondary,
-  },
-  // Kanban
-  kanbanContainer: {
-    flexDirection: 'column',
-    gap: 16,
-    marginTop: 12,
-  },
-  kanbanColumn: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  kanbanColumnTitle: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    fontSize: 15,
-    borderBottomWidth: 3,
-    paddingBottom: 8,
-    marginBottom: 12,
-    color: colors.text,
-  },
-  kanbanCard: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  kanbanCardTitle: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-  },
-  kanbanCardSub: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  kanbanActionBtn: {
-    borderRadius: 6,
-    paddingVertical: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  kanbanActionBtnText: {
-    ...typography.caption,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  kanbanBadgeEnRuta: {
-    backgroundColor: colors.success,
-    borderRadius: 6,
-    paddingVertical: 6,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  kanbanBadgeTextEnRuta: {
-    ...typography.caption,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  kanbanEmpty: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginVertical: 16,
   },
 });

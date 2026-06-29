@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
-import { TouchableOpacity } from 'react-native';
+import { User, Vehicle } from '../../types';
 
-export default function SocioDashboardScreen({ navigation }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+export interface SocioDashboardScreenProps {
+  navigation: any;
+}
 
-  const [vehicles, setVehicles] = useState([]);
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [totalExpense, setTotalExpense] = useState(0);
+export default function SocioDashboardScreen({ navigation }: SocioDashboardScreenProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [totalIncome, setTotalIncome] = useState<number>(0);
+  const [totalExpense, setTotalExpense] = useState<number>(0);
 
   useEffect(() => {
     loadData();
@@ -34,7 +38,7 @@ export default function SocioDashboardScreen({ navigation }) {
           .select('*')
           .eq('owner_id', user.id);
         
-        if (vehicleData) setVehicles(vehicleData);
+        if (vehicleData) setVehicles(vehicleData as Vehicle[]);
 
         // Cargar finanzas de los vehículos del socio
         if (vehicleData && vehicleData.length > 0) {
@@ -80,7 +84,7 @@ export default function SocioDashboardScreen({ navigation }) {
   };
 
   const netProfit = totalIncome - totalExpense;
-  const formatMoney = (amount) => `Bs. ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  const formatMoney = (amount: number) => `Bs. ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -107,7 +111,6 @@ export default function SocioDashboardScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
         }
       >
-        
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Ingresos Brutos</Text>
@@ -157,7 +160,6 @@ export default function SocioDashboardScreen({ navigation }) {
             </View>
           ))
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -207,19 +209,19 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
   totalBox: {
+    marginBottom: 24,
     alignItems: 'center',
-    marginBottom: 32,
   },
   statLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statValue: {
     ...typography.h2,
@@ -228,46 +230,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.h3,
     color: colors.text,
-    marginBottom: 16,
-  },
-  vehicleCard: {
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  vehicleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  plate: {
-    ...typography.mono,
-    fontSize: 18,
-    color: colors.text,
-    marginLeft: 12,
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    ...typography.caption,
     fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  routeText: {
-    ...typography.body,
-    color: colors.textSecondary,
+    marginBottom: 16,
   },
   emptyCard: {
     backgroundColor: colors.card,
-    padding: 32,
-    borderRadius: 16,
+    padding: 24,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
@@ -275,6 +244,40 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body,
     color: colors.textSecondary,
-    marginTop: 12,
+    marginTop: 8,
+  },
+  vehicleCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  vehicleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  plate: {
+    ...typography.body,
+    fontFamily: typography.fontFamilyBold,
+    color: colors.text,
+    marginLeft: 8,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 10,
+    fontFamily: typography.fontFamilyBold,
+    color: '#FFF',
+  },
+  routeText: {
+    ...typography.caption,
+    color: colors.textSecondary,
   },
 });

@@ -1,4 +1,4 @@
-// OfflineQueue.js
+// OfflineQueue.ts
 // Maneja el Event Sourcing local para acciones del chofer
 // Almacena eventos offline y los sincroniza cuando hay conexión
 
@@ -6,34 +6,41 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { AuthService } from './AuthService';
 
-let isOnline = true;
+let isOnline: boolean = true;
 
 const QUEUE_KEY = '@offline_queue';
 
+export interface OfflineEvent {
+  event_type: string;
+  payload: any;
+  driver_id: number | null;
+  created_at: string;
+}
+
 export const OfflineQueue = {
-  setOnlineStatus: async (status) => {
+  setOnlineStatus: async (status: boolean): Promise<void> => {
     isOnline = status;
     if (isOnline) {
       await OfflineQueue.sync();
     }
   },
 
-  getOnlineStatus: () => isOnline,
+  getOnlineStatus: (): boolean => isOnline,
 
-  getQueue: async () => {
+  getQueue: async (): Promise<OfflineEvent[]> => {
     try {
       const q = await AsyncStorage.getItem(QUEUE_KEY);
-      return q ? JSON.parse(q) : [];
+      return q ? JSON.parse(q) as OfflineEvent[] : [];
     } catch (e) {
       return [];
     }
   },
 
-  addEvent: async (eventType, payload) => {
+  addEvent: async (eventType: string, payload: any): Promise<void> => {
     // Obtener el usuario actual desde la sesión local (no de Supabase Auth)
     const currentUser = await AuthService.getCurrentUser();
     
-    const event = {
+    const event: OfflineEvent = {
       event_type: eventType,
       payload: payload,
       driver_id: currentUser ? currentUser.id : null,
@@ -58,12 +65,12 @@ export const OfflineQueue = {
     }
   },
 
-  getQueueSize: async () => {
+  getQueueSize: async (): Promise<number> => {
     const q = await OfflineQueue.getQueue();
     return q.length;
   },
 
-  sync: async () => {
+  sync: async (): Promise<void> => {
     const queue = await OfflineQueue.getQueue();
     if (queue.length === 0) return;
     

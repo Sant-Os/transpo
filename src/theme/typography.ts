@@ -29,6 +29,5 @@ export const typography = {
   },
   mono: {
     fontFamily: 'JetBrainsMono_400Regular',
-    // Usado para CI, placas, montos
   }
 };

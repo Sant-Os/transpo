@@ -1,14 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { User } from '../types';
 
 const USER_STORAGE_KEY = '@user_session';
+
+export interface LoginResult {
+  user: User;
+  roles: string[];
+}
 
 export const AuthService = {
   /**
    * Login mediante tabla propia "users" (sin Supabase Auth)
    * Busca el usuario por username y password en la tabla directamente.
    */
-  login: async (username, password) => {
+  login: async (username: string, password: string): Promise<LoginResult> => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -26,10 +32,10 @@ export const AuthService = {
       await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data));
 
       return {
-        user: data,
-        roles: [data.role]
+        user: data as User,
+        roles: [(data as User).role]
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error.message);
       throw error;
     }
@@ -38,7 +44,7 @@ export const AuthService = {
   /**
    * Cerrar sesión — limpia el almacenamiento local
    */
-  logout: async () => {
+  logout: async (): Promise<void> => {
     try {
       await AsyncStorage.removeItem(USER_STORAGE_KEY);
     } catch (error) {
@@ -49,10 +55,10 @@ export const AuthService = {
   /**
    * Obtener el usuario actual desde la sesión guardada
    */
-  getCurrentUser: async () => {
+  getCurrentUser: async (): Promise<User | null> => {
     try {
       const userData = await AsyncStorage.getItem(USER_STORAGE_KEY);
-      return userData ? JSON.parse(userData) : null;
+      return userData ? JSON.parse(userData) as User : null;
     } catch (error) {
       return null;
     }
@@ -61,7 +67,7 @@ export const AuthService = {
   /**
    * Obtener el ID del usuario actual
    */
-  getCurrentUserId: async () => {
+  getCurrentUserId: async (): Promise<number | null> => {
     const user = await AuthService.getCurrentUser();
     return user ? user.id : null;
   },
@@ -69,7 +75,7 @@ export const AuthService = {
   /**
    * Verificar si hay una sesión activa
    */
-  isLoggedIn: async () => {
+  isLoggedIn: async (): Promise<boolean> => {
     const user = await AuthService.getCurrentUser();
     return user !== null;
   }

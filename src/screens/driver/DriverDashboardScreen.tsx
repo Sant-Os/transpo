@@ -8,18 +8,23 @@ import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
 import { OfflineQueue } from '../../services/OfflineQueue';
+import { User, Vehicle, Trip } from '../../types';
 
-export default function DriverDashboardScreen({ navigation }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isOnline, setIsOnline] = useState(true);
-  const [pendingEvents, setPendingEvents] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
+export interface DriverDashboardScreenProps {
+  navigation: any;
+}
+
+export default function DriverDashboardScreen({ navigation }: DriverDashboardScreenProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [pendingEvents, setPendingEvents] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // Datos del viaje actual
-  const [currentTrip, setCurrentTrip] = useState(null);
-  const [ticketCount, setTicketCount] = useState(0);
-  const [parcelCount, setParcelCount] = useState(0);
-  const [vehicle, setVehicle] = useState(null);
+  const [currentTrip, setCurrentTrip] = useState<any>(null);
+  const [ticketCount, setTicketCount] = useState<number>(0);
+  const [parcelCount, setParcelCount] = useState<number>(0);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
     loadData();
@@ -43,11 +48,11 @@ export default function DriverDashboardScreen({ navigation }) {
           .in('status', ['SCHEDULED', 'BOARDING', 'IN_PROGRESS'])
           .order('trip_date', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (tripData) {
           setCurrentTrip(tripData);
-          setVehicle(tripData.vehicle);
+          setVehicle(tripData.vehicle as Vehicle);
 
           // Contar boletos del viaje
           const { count: tickets } = await supabase
@@ -63,6 +68,9 @@ export default function DriverDashboardScreen({ navigation }) {
             .select('*', { count: 'exact', head: true })
             .eq('trip_id', tripData.id);
           setParcelCount(parcels || 0);
+        } else {
+          setCurrentTrip(null);
+          setVehicle(null);
         }
       }
 
@@ -87,7 +95,7 @@ export default function DriverDashboardScreen({ navigation }) {
     setPendingEvents(size);
   };
 
-  const handleAction = async (type, payload) => {
+  const handleAction = async (type: string, payload: any) => {
     // Agregar trip_id al payload si hay viaje activo
     if (currentTrip) {
       payload.trip_id = currentTrip.id;
@@ -201,7 +209,6 @@ export default function DriverDashboardScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
         }
       >
-        
         <Text style={styles.sectionTitle}>Mi Hoja de Ruta Actual</Text>
         {currentTrip ? (
           <View style={styles.card}>
@@ -270,7 +277,6 @@ export default function DriverDashboardScreen({ navigation }) {
             <Text style={[styles.actionText, { color: colors.danger }]}>Alerta GPS</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

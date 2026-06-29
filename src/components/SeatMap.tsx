@@ -13,7 +13,7 @@ import { typography } from '../theme/typography';
 // Fila 5: [12] [13] [Pasillo] [14]
 // Fila 6: [15] [16] [17] [18]
 
-const layout = [
+const layout: (number | null)[][] = [
   [null, 1, 2],
   [3, 4, null, 5],
   [6, 7, null, 8],
@@ -22,9 +22,14 @@ const layout = [
   [15, 16, 17, 18]
 ];
 
-export default function SeatMap({ seatsData = {}, onSeatPress }) {
+export interface SeatMapProps {
+  seatsData?: Record<number, 'free' | 'reserved' | 'occupied' | string>;
+  onSeatPress?: (seatNumber: number, status: string) => void;
+}
+
+export default function SeatMap({ seatsData = {}, onSeatPress }: SeatMapProps) {
   
-  const renderSeat = (seatNumber, index) => {
+  const renderSeat = (seatNumber: number | null, index: string | number) => {
     if (!seatNumber) return <View style={styles.emptySpace} key={`empty-${index}`} />;
 
     const status = seatsData[seatNumber] || 'free'; // 'free', 'reserved', 'occupied'

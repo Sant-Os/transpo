@@ -6,7 +6,11 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { AuthService } from '../../services/AuthService';
 
-export default function LoginScreen({ navigation }) {
+export interface LoginScreenProps {
+  navigation: any;
+}
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +37,7 @@ export default function LoginScreen({ navigation }) {
       } else {
         navigation.replace('SecretaryPOS'); 
       }
-    } catch (error) {
+    } catch (error: any) {
       alert('Error de login: ' + error.message);
     } finally {
       setLoading(false);
