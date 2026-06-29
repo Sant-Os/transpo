@@ -288,5 +288,13 @@ INSERT INTO public.segments (route_id, origin, destination, order_index, price, 
   (1, 'San Cristóbal', 'Culpina', 4, 45.00, 110);
 
 -- ============================================================
+-- HABILITAR TIEMPO REAL (Supabase Realtime / WebSockets)
+-- ============================================================
+alter publication supabase_realtime add table public.messages;
+alter publication supabase_realtime add table public.tickets;
+alter publication supabase_realtime add table public.trips;
+alter publication supabase_realtime add table public.alerts;
+
+-- ============================================================
 -- FIN DEL SCRIPT LIMPIO DE PRODUCCIÓN
 -- ============================================================

@@ -20,12 +20,28 @@ export default function ChatScreen({ navigation }) {
   useEffect(() => {
     loadUserAndMessages();
     
-    // Auto-poll messages every 6 seconds to simulate real-time
-    const interval = setInterval(() => {
-      fetchMessages(activeChannel, false);
-    }, 6000);
+    // Suscripción en Tiempo Real usando WebSockets de Supabase
+    const channelName = `realtime_chat_${activeChannel.toLowerCase()}`;
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages', 
+          filter: `channel=eq.${activeChannel}` 
+        },
+        async (payload) => {
+          // Recargar mensajes al recibir uno nuevo instantáneamente
+          fetchMessages(activeChannel, false);
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [activeChannel]);
 
   const loadUserAndMessages = async () => {

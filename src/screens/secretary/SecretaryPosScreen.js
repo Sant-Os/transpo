@@ -137,6 +137,44 @@ export default function SecretaryPosScreen({ navigation }) {
   useEffect(() => {
     if (!selectedTripId) return;
     fetchTripDetails();
+
+    // Suscripción Realtime para boletos en este viaje (asientos ocupados/libres)
+    const ticketSubscription = supabase
+      .channel(`realtime_tickets_trip_${selectedTripId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tickets',
+          filter: `trip_id=eq.${selectedTripId}`
+        },
+        () => {
+          fetchTripDetails();
+        }
+      )
+      .subscribe();
+
+    // Suscripción Realtime para cambios en estados de viajes (despachos Kanban)
+    const tripSubscription = supabase
+      .channel('realtime_trips')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trips'
+        },
+        () => {
+          loadInitialData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ticketSubscription);
+      supabase.removeChannel(tripSubscription);
+    };
   }, [selectedTripId]);
 
   const fetchTripDetails = async () => {
