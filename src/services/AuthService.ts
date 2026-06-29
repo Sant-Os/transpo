@@ -17,12 +17,11 @@ export const AuthService = {
   login: async (username: string, password: string): Promise<LoginResult> => {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-        .eq('is_active', true)
-        .single();
+        .rpc('verify_user', {
+          p_username: username,
+          p_password: password
+        })
+        .maybeSingle();
 
       if (error || !data) {
         throw new Error('Usuario o contraseña incorrectos');

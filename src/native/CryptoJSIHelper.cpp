@@ -20,7 +20,7 @@ public:
             1, // Número de argumentos
             [](jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args, size_t count) -> jsi::Value {
                 if (count < 1 || !args[0].isString()) {
-                    jsi::detail::throwJSIException(rt, "Argumento inválido: se esperaba string.");
+                    throw jsi::JSError(rt, "Argumento inválido: se esperaba string.");
                 }
 
                 // Obtener texto original en C++ string

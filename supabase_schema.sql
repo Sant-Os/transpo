@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================================
 -- SCRIPT DE ESTRUCTURA Y MIGRACIÓN LIMPIA DE BASE DE DATOS
 -- PROYECTO: SISTEMA MÓVIL DE GESTIÓN SINDICAL DE TRANSPORTE
@@ -121,6 +123,8 @@ CREATE TABLE public.tickets (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX unique_active_seat ON public.tickets (trip_id, seat_number) WHERE status = 'ACTIVE';
+
 -- ============================================================
 -- 8. ENCOMIENDAS (Parcels)
 -- ============================================================
@@ -225,6 +229,21 @@ CREATE TABLE public.cash_registers (
 );
 
 -- ============================================================
+-- 15. FUNCIÓN DE AUTENTICACIÓN SEGURA (Verificación con Bcrypt)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.verify_user(p_username TEXT, p_password TEXT)
+RETURNS SETOF public.users AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM public.users
+  WHERE username = p_username
+    AND password = crypt(p_password, password)
+    AND is_active = true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- ============================================================
 -- DESHABILITAR RLS PARA SIMPLIFICAR ACCESOS DE API ANON
 -- ============================================================
 ALTER TABLE public.offices  ENABLE ROW LEVEL SECURITY;
@@ -267,9 +286,9 @@ INSERT INTO public.offices (name, city, address, phone) VALUES
   ('Oficina Central Uyuni', 'Uyuni', 'Av. Ferroviaria #123', '2-693-1234'),
   ('Oficina San Cristóbal', 'San Cristóbal', 'Calle Principal s/n', '2-693-5678');
 
--- 2. Registrar ÚNICO Administrador Inicial (admin / admin)
+-- 2. Registrar ÚNICO Administrador Inicial (admin / admin hasheado)
 INSERT INTO public.users (username, password, full_name, ci, phone, role, office_id) VALUES
-  ('admin', 'admin', 'Administrador Sindicato', '12345678', '71234567', 'ADMIN', 1);
+  ('admin', crypt('admin', gen_salt('bf')), 'Administrador Sindicato', '12345678', '71234567', 'ADMIN', 1);
 
 -- 3. Registrar Cuentas Corporativas Iniciales para Convenios
 INSERT INTO public.corporate_accounts (company_name) VALUES

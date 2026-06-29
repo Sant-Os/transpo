@@ -391,7 +391,8 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
 
     try {
       setLoading(true);
-      const randomQR = 'QR-' + Math.floor(100000 + Math.random() * 900000);
+      const uniqueSuffix = Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+      const randomQR = `QR-${uniqueSuffix}`;
 
       const { error } = await supabase.from('parcels').insert({
         trip_id: parseInt(selectedTripId),

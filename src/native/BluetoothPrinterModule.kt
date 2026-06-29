@@ -3,6 +3,8 @@ package com.sindicatotrans.nativemodules
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.bluetooth.BluetoothManager
+import android.content.Context
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -27,7 +29,8 @@ class BluetoothPrinterModule(reactContext: ReactApplicationContext) : ReactConte
     @ReactMethod
     fun printTicket(macAddress: String, ticketContent: String, promise: Promise) {
         try {
-            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+            val bluetoothManager = reactApplicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            val bluetoothAdapter = bluetoothManager.adapter
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
                 promise.reject("BT_DISABLED", "El adaptador Bluetooth está apagado.")
                 return
