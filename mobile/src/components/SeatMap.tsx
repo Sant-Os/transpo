@@ -34,11 +34,22 @@ export default function SeatMap({ datosAsientos = {}, alPresionarAsiento }: Prop
     if (!numeroAsiento) return <View style={estilos.espacioVacio} key={`vacio-${indice}`} />;
 
     const estado = datosAsientos[numeroAsiento] || 'libre';
-    let colorFondo = colors.seatFree;
-    let colorTexto = '#FFFFFF';
+    let colorFondo = '#E5E5EA'; // gris claro para libre
+    let colorTexto = '#000000';
 
-    if (estado === 'seleccionado') colorFondo = colors.seatReserved;
-    if (estado === 'ocupado') colorFondo = colors.seatOccupied;
+    if (estado === 'libre') {
+      colorFondo = '#E5E5EA';
+      colorTexto = '#000000';
+    } else if (estado === 'seleccionado') {
+      colorFondo = colors.primary; // Azul Apple para seleccionado
+      colorTexto = '#FFFFFF';
+    } else if (estado === 'reservado') {
+      colorFondo = '#FFCC00'; // Amarillo Apple para reservado
+      colorTexto = '#000000';
+    } else if (estado === 'ocupado') {
+      colorFondo = '#FF3B30'; // Rojo Apple para ocupado (vendido)
+      colorTexto = '#FFFFFF';
+    }
 
     return (
       <AnimatedPressable
@@ -86,15 +97,19 @@ export default function SeatMap({ datosAsientos = {}, alPresionarAsiento }: Prop
       {/* Leyenda */}
       <View style={estilos.leyenda}>
         <View style={estilos.itemLeyenda}>
-          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatFree }]} />
+          <View style={[estilos.puntoLeyenda, { backgroundColor: '#E5E5EA' }]} />
           <Text style={estilos.textoLeyenda}>Libre</Text>
         </View>
         <View style={estilos.itemLeyenda}>
-          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatReserved }]} />
+          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.primary }]} />
           <Text style={estilos.textoLeyenda}>Seleccionado</Text>
         </View>
         <View style={estilos.itemLeyenda}>
-          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatOccupied }]} />
+          <View style={[estilos.puntoLeyenda, { backgroundColor: '#FFCC00' }]} />
+          <Text style={estilos.textoLeyenda}>Reservado</Text>
+        </View>
+        <View style={estilos.itemLeyenda}>
+          <View style={[estilos.puntoLeyenda, { backgroundColor: '#FF3B30' }]} />
           <Text style={estilos.textoLeyenda}>Ocupado</Text>
         </View>
       </View>

@@ -33,16 +33,29 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   const [viajeSeleccionadoId, setViajeSeleccionadoId] = useState<string | null>(null);
 
   // TAB 1: Pasajes
-  const [asientoSeleccionado, setAsientoSeleccionado] = useState<number | null>(null);
+  const [asientosSeleccionados, setAsientosSeleccionados] = useState<number[]>([]);
   const [nombrePasajero, setNombrePasajero] = useState<string>('');
   const [ciPasajero, setCiPasajero] = useState<string>('');
   const [tramoOrigen, setTramoOrigen] = useState<string>('Uyuni');
   const [tramoDestino, setTramoDestino] = useState<string>('San Cristóbal');
 
   const [listaRutasTarifas, setListaRutasTarifas] = useState<any[]>([]);
-  const [precioBoleto, setPrecioBoleto] = useState<number>(35.00);
+  const [precioBoleto, setPrecioBoleto] = useState<number>(35);
   const [destinoSeleccionadoId, setDestinoSeleccionadoId] = useState<string | null>(null);
   const [asientosOcupados, setAsientosOcupados] = useState<number[]>([]);
+  const [listaBoletosViaje, setListaBoletosViaje] = useState<any[]>([]);
+  const [idBoletoConfirmar, setIdBoletoConfirmar] = useState<number | null>(null);
+  const [asientoAccionMenu, setAsientoAccionMenu] = useState<number | null>(null);
+
+  // Formulario Programar Viaje (Secretaria)
+  const [mostrarModalProgramarViaje, setMostrarModalProgramarViaje] = useState<boolean>(false);
+  const [viajeNuevoRutaId, setViajeNuevoRutaId] = useState<string>('');
+  const [viajeNuevoVehiculoId, setViajeNuevoVehiculoId] = useState<string>('');
+  const [viajeNuevoChoferId, setViajeNuevoChoferId] = useState<string>('');
+  const [viajeNuevoHora, setViajeNuevoHora] = useState<string>('14:00');
+  const [viajeNuevoFecha, setViajeNuevoFecha] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [listaVehiculos, setListaVehiculos] = useState<any[]>([]);
+  const [listaChoferes, setListaChoferes] = useState<any[]>([]);
 
   const [mostrarReciboModal, setMostrarReciboModal] = useState<boolean>(false);
   const [ultimoBoletoVendido, setUltimoBoletoVendido] = useState<any>(null);
@@ -147,6 +160,23 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
         setListaCuentasCorp(cuentasCorp);
         if (cuentasCorp.length > 0) setCorpSeleccionadaId(cuentasCorp[0].id.toString());
       }
+
+      // Cargar vehículos activos
+      const { data: vehiculos } = await supabase
+        .from('vehiculos')
+        .select('*')
+        .eq('estado', 'ACTIVO')
+        .order('placa', { ascending: true });
+      if (vehiculos) setListaVehiculos(vehiculos);
+
+      // Cargar choferes activos
+      const { data: choferes } = await supabase
+        .from('usuarios')
+        .select('id, nombre_completo')
+        .eq('rol', 'CHOFER')
+        .eq('activo', true)
+        .order('nombre_completo', { ascending: true });
+      if (choferes) setListaChoferes(choferes);
     } catch (e) {
       console.error(e);
     } finally {
@@ -179,13 +209,15 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
     try {
       const { data: boletos } = await supabase
         .from('boletos')
-        .select('numero_asiento')
+        .select('id, numero_asiento, estado, nombre_pasajero, ci_pasajero')
         .eq('viaje_id', parseInt(viajeSeleccionadoId))
-        .eq('estado', 'ACTIVO');
+        .in('estado', ['OCUPADO', 'RESERVADO']);
 
       if (boletos) {
-        setAsientosOcupados(boletos.map((b: any) => b.numero_asiento));
+        setListaBoletosViaje(boletos);
+        setAsientosOcupados(boletos.filter((b: any) => b.estado === 'OCUPADO').map((b: any) => b.numero_asiento));
       } else {
+        setListaBoletosViaje([]);
         setAsientosOcupados([]);
       }
 
@@ -286,16 +318,65 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   };
 
   const manejarSeleccionAsiento = (numeroAsiento: number, estado: string) => {
-    if (estado !== 'libre') {
+    if (estado === 'ocupado') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      mostrarToast(`El asiento ${numeroAsiento} no está disponible`, 'warning');
+      mostrarToast(`El asiento ${numeroAsiento} ya está ocupado (vendido)`, 'warning');
       return;
     }
-    setAsientoSeleccionado(numeroAsiento);
+
+    if (estado === 'reservado') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setAsientoAccionMenu(numeroAsiento);
+      return;
+    }
+
+    // Toggle libre/seleccionado
+    setAsientosSeleccionados(prev => {
+      if (prev.includes(numeroAsiento)) {
+        return prev.filter(a => a !== numeroAsiento);
+      } else {
+        return [...prev, numeroAsiento];
+      }
+    });
   };
 
-  const manejarCompraBoleto = async () => {
-    if (!asientoSeleccionado || !nombrePasajero || !ciPasajero || !viajeSeleccionadoId) {
+  const liberarReserva = async (numeroAsiento: number) => {
+    try {
+      setCargando(true);
+      const boleto = listaBoletosViaje.find(b => b.numero_asiento === numeroAsiento && b.estado === 'RESERVADO');
+      if (!boleto) return;
+
+      const { error } = await supabase
+        .from('boletos')
+        .delete()
+        .eq('id', boleto.id);
+
+      if (error) throw error;
+
+      mostrarToast(`Reserva del asiento ${numeroAsiento} liberada`, 'success');
+      setAsientoAccionMenu(null);
+      await obtenerDetallesViaje();
+    } catch (e: any) {
+      mostrarToast('Error al liberar reserva: ' + e.message, 'error');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const iniciarConfirmacionReserva = (numeroAsiento: number) => {
+    const boleto = listaBoletosViaje.find(b => b.numero_asiento === numeroAsiento && b.estado === 'RESERVADO');
+    if (!boleto) return;
+
+    setNombrePasajero(boleto.nombre_pasajero);
+    setCiPasajero(boleto.ci_pasajero);
+    setAsientosSeleccionados([numeroAsiento]);
+    setIdBoletoConfirmar(boleto.id);
+    setAsientoAccionMenu(null);
+    mostrarToast(`Cargado asiento ${numeroAsiento} para confirmar venta`, 'info');
+  };
+
+  const manejarCompraBoleto = async (tipoBoleto: 'OCUPADO' | 'RESERVADO' = 'OCUPADO') => {
+    if (asientosSeleccionados.length === 0 || !nombrePasajero || !ciPasajero || !viajeSeleccionadoId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       mostrarToast('Complete todos los campos de pasajero y asiento', 'warning');
       return;
@@ -306,58 +387,129 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
       const viaje = listaViajes.find(t => t.id.toString() === viajeSeleccionadoId);
       const empresaCorp = esCorporativo ? listaCuentasCorp.find(c => c.id.toString() === corpSeleccionadaId) : null;
 
-      const boletoInsertar = {
-        viaje_id: parseInt(viajeSeleccionadoId),
-        numero_asiento: asientoSeleccionado,
-        nombre_pasajero: nombrePasajero,
-        ci_pasajero: ciPasajero,
-        ruta_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
-        precio_pagado: precioBoleto,
-        estado: 'ACTIVO',
-        vendido_por: usuarioActual?.id
-      };
+      if (idBoletoConfirmar) {
+        // Confirmar reserva existente
+        const { error } = await supabase
+          .from('boletos')
+          .update({
+            nombre_pasajero: nombrePasajero,
+            ci_pasajero: ciPasajero,
+            ruta_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
+            precio_pagado: precioBoleto,
+            estado: 'OCUPADO',
+            vendido_por: usuarioActual?.id
+          })
+          .eq('id', idBoletoConfirmar);
 
-      const { data, error } = await supabase
-        .from('boletos')
-        .insert(boletoInsertar)
-        .select()
-        .single();
+        if (error) throw error;
+
+        await supabase.from('finanzas').insert({
+          viaje_id: parseInt(viajeSeleccionadoId),
+          usuario_id: usuarioActual?.id,
+          concepto: `Reserva Asiento ${asientosSeleccionados[0]} confirmada de venta (${nombrePasajero})`,
+          monto: precioBoleto,
+          tipo: 'INGRESO'
+        });
+
+        mostrarToast('Reserva vendida con éxito', 'success');
+        setIdBoletoConfirmar(null);
+      } else {
+        // Registrar múltiples boletos
+        const boletosInsertar = asientosSeleccionados.map(asiento => ({
+          viaje_id: parseInt(viajeSeleccionadoId),
+          numero_asiento: asiento,
+          nombre_pasajero: nombrePasajero,
+          ci_pasajero: ciPasajero,
+          ruta_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
+          precio_pagado: precioBoleto,
+          estado: tipoBoleto,
+          vendido_por: usuarioActual?.id
+        }));
+
+        const { data, error } = await supabase
+          .from('boletos')
+          .insert(boletosInsertar)
+          .select();
+
+        if (error) throw error;
+
+        if (tipoBoleto === 'OCUPADO') {
+          const totalCosto = precioBoleto * asientosSeleccionados.length;
+          await supabase.from('finanzas').insert({
+            viaje_id: parseInt(viajeSeleccionadoId),
+            usuario_id: usuarioActual?.id,
+            concepto: esCorporativo
+              ? `Venta Boletos Asientos: ${asientosSeleccionados.join(', ')} (${nombrePasajero}) - Convenio: ${empresaCorp?.nombre_empresa}`
+              : `Venta Boletos Asientos: ${asientosSeleccionados.join(', ')} (${nombrePasajero})`,
+            monto: totalCosto,
+            tipo: 'INGRESO'
+          });
+        }
+
+        if (data && data.length > 0) {
+          setUltimoBoletoVendido({
+            id: data[0].id,
+            numero_asiento: data[0].numero_asiento,
+            nombre_pasajero: nombrePasajero,
+            ci_pasajero: ciPasajero,
+            origen: tramoOrigen,
+            destino: tramoDestino,
+            precio_pagado: precioBoleto,
+            fecha_viaje: viaje ? viaje.fecha_viaje : 'Hoy',
+            hora_salida: viaje ? viaje.hora_salida : '14:00',
+            placa: viaje?.vehiculo?.placa || '2314-HBG',
+            chofer: viaje?.chofer?.nombre_completo || 'Marcos Ruiz'
+          });
+        }
+
+        mostrarToast(tipoBoleto === 'RESERVADO' ? 'Reserva guardada con éxito' : 'Pasaje vendido con éxito', 'success');
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (tipoBoleto === 'OCUPADO') {
+        setMostrarReciboModal(true);
+      }
+      setAsientosSeleccionados([]);
+      setNombrePasajero('');
+      setCiPasajero('');
+      await obtenerDetallesViaje();
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      mostrarToast('Error al procesar pasaje: ' + e.message, 'error');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const manejarProgramarViaje = async () => {
+    if (!viajeNuevoRutaId || !viajeNuevoVehiculoId || !viajeNuevoChoferId || !viajeNuevoHora) {
+      mostrarToast('Por favor complete todos los campos obligatorios.', 'warning');
+      return;
+    }
+
+    try {
+      setCargando(true);
+      const { error } = await supabase.from('viajes').insert({
+        ruta_id: parseInt(viajeNuevoRutaId),
+        vehiculo_id: parseInt(viajeNuevoVehiculoId),
+        chofer_id: parseInt(viajeNuevoChoferId),
+        hora_salida: viajeNuevoHora,
+        fecha_viaje: viajeNuevoFecha,
+        estado: 'PROGRAMADO',
+        oficina_id: usuarioActual?.oficina_id || null
+      });
 
       if (error) throw error;
 
-      await supabase.from('finanzas').insert({
-        viaje_id: parseInt(viajeSeleccionadoId),
-        usuario_id: usuarioActual?.id,
-        concepto: esCorporativo
-          ? `Boleto Asiento ${asientoSeleccionado} (${nombrePasajero}) - Convenio: ${empresaCorp?.nombre_empresa}`
-          : `Venta boleto - Asiento ${asientoSeleccionado} (${nombrePasajero})`,
-        monto: precioBoleto,
-        tipo: 'INGRESO'
-      });
-
-      setUltimoBoletoVendido({
-        id: data.id,
-        numero_asiento: asientoSeleccionado,
-        nombre_pasajero: nombrePasajero,
-        ci_pasajero: ciPasajero,
-        origen: tramoOrigen,
-        destino: tramoDestino,
-        precio_pagado: precioBoleto,
-        fecha_viaje: viaje ? viaje.fecha_viaje : 'Hoy',
-        hora_salida: viaje ? viaje.hora_salida : '14:00',
-        placa: viaje?.vehiculo?.placa || '2314-HBG',
-        chofer: viaje?.chofer?.nombre_completo || 'Marcos Ruiz'
-      });
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setMostrarReciboModal(true);
-      setAsientoSeleccionado(null);
-      setNombrePasajero('');
-      setCiPasajero('');
-      obtenerDetallesViaje();
+      mostrarToast('Viaje programado con éxito', 'success');
+      setMostrarModalProgramarViaje(false);
+      setViajeNuevoRutaId('');
+      setViajeNuevoVehiculoId('');
+      setViajeNuevoChoferId('');
+      await cargarDatosIniciales();
     } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      mostrarToast('Error vendiendo pasaje: ' + e.message, 'error');
+      mostrarToast('Error programando viaje: ' + e.message, 'error');
     } finally {
       setCargando(false);
     }
@@ -458,8 +610,12 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
   };
 
   const datosAsientoEstado: Record<number, string> = {};
-  asientosOcupados.forEach(asiento => { datosAsientoEstado[asiento] = 'ocupado'; });
-  if (asientoSeleccionado) { datosAsientoEstado[asientoSeleccionado] = 'seleccionado'; }
+  listaBoletosViaje.forEach(boleto => {
+    datosAsientoEstado[boleto.numero_asiento] = boleto.estado.toLowerCase(); // 'ocupado' o 'reservado'
+  });
+  asientosSeleccionados.forEach(asiento => {
+    datosAsientoEstado[asiento] = 'seleccionado';
+  });
 
   return (
     <SafeAreaView style={estilos.contenedor}>
@@ -532,12 +688,12 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
               <View style={estilos.tarjeta}>
                 <Text style={estilos.tituloTarjeta}>Detalles del Pasaje</Text>
 
-                {/* Asiento seleccionado */}
+                {/* Asiento(s) seleccionado(s) */}
                 <View style={estilos.filaInsigniaAsiento}>
-                  <Text style={estilos.etiquetaCampo}>Asiento</Text>
-                  <View style={[estilos.insigniaAsiento, !asientoSeleccionado && { backgroundColor: colors.surface }]}>
-                    <Text style={[estilos.textoInsigniaAsiento, !asientoSeleccionado && { color: colors.textSecondary }]}>
-                      {asientoSeleccionado ? `#${asientoSeleccionado}` : '—'}
+                  <Text style={estilos.etiquetaCampo}>Asiento(s)</Text>
+                  <View style={[estilos.insigniaAsiento, asientosSeleccionados.length === 0 && { backgroundColor: colors.surface }]}>
+                    <Text style={[estilos.textoInsigniaAsiento, asientosSeleccionados.length === 0 && { color: colors.textSecondary }]}>
+                      {asientosSeleccionados.length > 0 ? asientosSeleccionados.map(a => `#${a}`).join(', ') : '—'}
                     </Text>
                   </View>
                 </View>
@@ -552,11 +708,11 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                       onPress={() => {
                         setDestinoSeleccionadoId(rutaTarifa.id.toString());
                         setTramoDestino(rutaTarifa.destino);
-                        setPrecioBoleto(parseFloat(rutaTarifa.precio.toString()));
+                        setPrecioBoleto(parseInt(rutaTarifa.precio.toString()));
                       }}
                     >
                       <Text style={[estilos.textoChip, destinoSeleccionadoId == rutaTarifa.id.toString() && estilos.textoChipActivo]}>
-                        {rutaTarifa.destino} — Bs. {parseFloat(rutaTarifa.precio).toFixed(2)}
+                        {rutaTarifa.destino} — Bs. {parseInt(rutaTarifa.precio)}
                       </Text>
                     </AnimatedPressable>
                   ))}
@@ -607,18 +763,52 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
                 {/* Precio */}
                 <View style={estilos.filaPrecio}>
                   <Text style={estilos.etiquetaPrecio}>Total</Text>
-                  <Text style={estilos.valorPrecio}>Bs. {precioBoleto.toFixed(2)}</Text>
+                  <Text style={estilos.valorPrecio}>Bs. {precioBoleto * (asientosSeleccionados.length || 1)}</Text>
                 </View>
 
-                {/* Botón emitir */}
-                <AnimatedPressable
-                  style={[estilos.botonPrincipal, !asientoSeleccionado && estilos.botonDeshabilitado]}
-                  disabled={!asientoSeleccionado}
-                  onPress={manejarCompraBoleto}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                  <Text style={estilos.textoBotonPrincipal}>Emitir Boleto</Text>
-                </AnimatedPressable>
+                {/* Botón emitir / reservar */}
+                {idBoletoConfirmar ? (
+                  <View style={{ gap: 8 }}>
+                    <AnimatedPressable
+                      style={[estilos.botonPrincipal, { backgroundColor: '#34C759' }]}
+                      onPress={() => manejarCompraBoleto('OCUPADO')}
+                    >
+                      <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                      <Text style={estilos.textoBotonPrincipal}>Confirmar Venta (Bs. {precioBoleto})</Text>
+                    </AnimatedPressable>
+                    <AnimatedPressable
+                      style={[estilos.botonPrincipal, { backgroundColor: '#FF3B30' }]}
+                      onPress={() => {
+                        setIdBoletoConfirmar(null);
+                        setAsientosSeleccionados([]);
+                        setNombrePasajero('');
+                        setCiPasajero('');
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#FFF" />
+                      <Text style={estilos.textoBotonPrincipal}>Cancelar Confirmación</Text>
+                    </AnimatedPressable>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                    <AnimatedPressable
+                      style={[estilos.botonPrincipal, { flex: 1, backgroundColor: '#34C759' }, asientosSeleccionados.length === 0 && estilos.botonDeshabilitado]}
+                      disabled={asientosSeleccionados.length === 0}
+                      onPress={() => manejarCompraBoleto('OCUPADO')}
+                    >
+                      <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                      <Text style={estilos.textoBotonPrincipal}>Vender</Text>
+                    </AnimatedPressable>
+                    <AnimatedPressable
+                      style={[estilos.botonPrincipal, { flex: 1, backgroundColor: '#FFCC00' }, asientosSeleccionados.length === 0 && estilos.botonDeshabilitado]}
+                      disabled={asientosSeleccionados.length === 0}
+                      onPress={() => manejarCompraBoleto('RESERVADO')}
+                    >
+                      <Ionicons name="bookmark" size={18} color="#000" />
+                      <Text style={[estilos.textoBotonPrincipal, { color: '#000' }]}>Reservar</Text>
+                    </AnimatedPressable>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -697,7 +887,22 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
           {/* TAB 3: SALIDAS (KANBAN) */}
           {indicePestanaActiva === 2 && (
             <View style={estilos.contenidoPestana}>
-              <Text style={estilos.tituloLista}>Control de Despacho</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={[estilos.tituloLista, { marginBottom: 0 }]}>Control de Despacho</Text>
+                <AnimatedPressable
+                  style={[estilos.botonPrincipal, { minHeight: 36, paddingHorizontal: 12, borderRadius: 10, marginVertical: 0 }]}
+                  onPress={() => {
+                    // Cargar ruta inicial por defecto
+                    if (listaRutasTarifas.length > 0) setViajeNuevoRutaId(listaRutasTarifas[0].id.toString());
+                    if (listaVehiculos.length > 0) setViajeNuevoVehiculoId(listaVehiculos[0].id.toString());
+                    if (listaChoferes.length > 0) setViajeNuevoChoferId(listaChoferes[0].id.toString());
+                    setMostrarModalProgramarViaje(true);
+                  }}
+                >
+                  <Ionicons name="calendar-outline" size={16} color="#FFF" />
+                  <Text style={[estilos.textoBotonPrincipal, { fontSize: 13 }]}>Programar Viaje</Text>
+                </AnimatedPressable>
+              </View>
 
               {/* Programados */}
               <View style={estilos.seccionKanban}>
@@ -931,6 +1136,150 @@ export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBo
             <AnimatedPressable style={estilos.botonTexto} onPress={() => setMostrarModalCerrarCaja(false)}>
               <Text style={estilos.etiquetaBotonTexto}>Cancelar</Text>
             </AnimatedPressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL ACCIONES ASIENTO RESERVADO */}
+      <Modal visible={asientoAccionMenu !== null} transparent animationType="fade" onRequestClose={() => setAsientoAccionMenu(null)}>
+        <View style={estilos.pantallaModal}>
+          <View style={[estilos.tarjetaModal, { padding: 28 }]}>
+            <View style={[estilos.circuloIconoModal, { backgroundColor: '#FFF9E6' }]}>
+              <Ionicons name="bookmark" size={32} color="#FFCC00" />
+            </View>
+            <Text style={estilos.tituloModal}>Asiento #{asientoAccionMenu} Reservado</Text>
+            <Text style={estilos.descripcionModal}>
+              ¿Qué acción desea realizar con esta reserva?
+            </Text>
+            
+            <AnimatedPressable
+              style={[estilos.botonPrincipal, { width: '100%', backgroundColor: '#34C759', marginBottom: 12 }]}
+              onPress={() => asientoAccionMenu && iniciarConfirmacionReserva(asientoAccionMenu)}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+              <Text style={estilos.textoBotonPrincipal}>Confirmar Venta</Text>
+            </AnimatedPressable>
+
+            <AnimatedPressable
+              style={[estilos.botonPrincipal, { width: '100%', backgroundColor: '#FF3B30', marginBottom: 12 }]}
+              onPress={() => asientoAccionMenu && liberarReserva(asientoAccionMenu)}
+            >
+              <Ionicons name="trash" size={20} color="#FFF" />
+              <Text style={estilos.textoBotonPrincipal}>Liberar Asiento</Text>
+            </AnimatedPressable>
+
+            <AnimatedPressable
+              style={[estilos.botonTexto, { marginTop: 4 }]}
+              onPress={() => setAsientoAccionMenu(null)}
+            >
+              <Text style={estilos.etiquetaBotonTexto}>Cerrar</Text>
+            </AnimatedPressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL PROGRAMAR VIAJE */}
+      <Modal visible={mostrarModalProgramarViaje} transparent animationType="slide" onRequestClose={() => setMostrarModalProgramarViaje(false)}>
+        <View style={estilos.pantallaModal}>
+          <View style={[estilos.tarjetaModal, { padding: 20, maxWidth: 380, maxHeight: '90%' }]}>
+            <Text style={[estilos.tituloModal, { alignSelf: 'flex-start', fontSize: 18, marginBottom: 16 }]}>Programar Nuevo Viaje</Text>
+            <ScrollView style={{ width: '100%' }} showsVerticalScrollIndicator={false}>
+              
+              {/* Ruta */}
+              <Text style={estilos.etiquetaCampo}>Seleccionar Ruta</Text>
+              {listaRutasTarifas.length === 0 ? (
+                <Text style={estilos.textoVacio}>No hay rutas configuradas</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  {listaRutasTarifas.map((ruta) => (
+                    <AnimatedPressable
+                      key={ruta.id}
+                      style={[estilos.botonChip, viajeNuevoRutaId == ruta.id.toString() && estilos.botonChipActivo]}
+                      onPress={() => setViajeNuevoRutaId(ruta.id.toString())}
+                    >
+                      <Text style={[estilos.textoChip, viajeNuevoRutaId == ruta.id.toString() && estilos.textoChipActivo]}>
+                        {ruta.nombre}
+                      </Text>
+                    </AnimatedPressable>
+                  ))}
+                </ScrollView>
+              )}
+
+              {/* Vehículo */}
+              <Text style={estilos.etiquetaCampo}>Seleccionar Vehículo (Flota)</Text>
+              {listaVehiculos.length === 0 ? (
+                <Text style={estilos.textoVacio}>No hay vehículos activos</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  {listaVehiculos.map((v) => (
+                    <AnimatedPressable
+                      key={v.id}
+                      style={[estilos.botonChip, viajeNuevoVehiculoId == v.id.toString() && estilos.botonChipActivo]}
+                      onPress={() => setViajeNuevoVehiculoId(v.id.toString())}
+                    >
+                      <Text style={[estilos.textoChip, viajeNuevoVehiculoId == v.id.toString() && estilos.textoChipActivo]}>
+                        {v.placa} ({v.modelo})
+                      </Text>
+                    </AnimatedPressable>
+                  ))}
+                </ScrollView>
+              )}
+
+              {/* Chofer */}
+              <Text style={estilos.etiquetaCampo}>Seleccionar Chofer</Text>
+              {listaChoferes.length === 0 ? (
+                <Text style={estilos.textoVacio}>No hay choferes activos</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  {listaChoferes.map((c) => (
+                    <AnimatedPressable
+                      key={c.id}
+                      style={[estilos.botonChip, viajeNuevoChoferId == c.id.toString() && estilos.botonChipActivo]}
+                      onPress={() => setViajeNuevoChoferId(c.id.toString())}
+                    >
+                      <Text style={[estilos.textoChip, viajeNuevoChoferId == c.id.toString() && estilos.textoChipActivo]}>
+                        {c.nombre_completo}
+                      </Text>
+                    </AnimatedPressable>
+                  ))}
+                </ScrollView>
+              )}
+
+              {/* Hora salida */}
+              <Text style={estilos.etiquetaCampo}>Hora de Salida (ej: 14:30)</Text>
+              <TextInput
+                style={estilos.input}
+                placeholder="14:00"
+                placeholderTextColor={colors.textTertiary}
+                value={viajeNuevoHora}
+                onChangeText={setViajeNuevoHora}
+              />
+
+              {/* Fecha viaje */}
+              <Text style={estilos.etiquetaCampo}>Fecha del Viaje</Text>
+              <TextInput
+                style={estilos.input}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textTertiary}
+                value={viajeNuevoFecha}
+                onChangeText={setViajeNuevoFecha}
+              />
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: 16 }}>
+              <AnimatedPressable
+                style={[estilos.botonModal, { backgroundColor: colors.primary }]}
+                onPress={manejarProgramarViaje}
+              >
+                <Text style={estilos.textoBotonModal}>Programar</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                style={[estilos.botonModal, { backgroundColor: colors.surface }]}
+                onPress={() => setMostrarModalProgramarViaje(false)}
+              >
+                <Text style={[estilos.textoBotonModal, { color: colors.textSecondary }]}>Cerrar</Text>
+              </AnimatedPressable>
+            </View>
           </View>
         </View>
       </Modal>

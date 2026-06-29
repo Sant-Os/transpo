@@ -116,7 +116,7 @@ CREATE TABLE public.boletos (
   ci_pasajero TEXT NOT NULL,
   ruta_destino_id BIGINT REFERENCES public.rutas(id),
   precio_pagado NUMERIC(10, 2) NOT NULL,
-  estado TEXT NOT NULL DEFAULT 'ACTIVO' CHECK (estado IN ('ACTIVO', 'USADO', 'CANCELADO')),
+  estado TEXT NOT NULL DEFAULT 'OCUPADO' CHECK (estado IN ('RESERVADO', 'OCUPADO', 'CANCELADO')),
   vendido_por BIGINT REFERENCES public.usuarios(id),
   creado_en TIMESTAMPTZ DEFAULT NOW()
 );

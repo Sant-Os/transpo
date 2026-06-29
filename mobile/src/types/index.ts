@@ -65,7 +65,7 @@ export interface Boleto {
   ci_pasajero: string;
   ruta_destino_id?: number;
   precio_pagado: number;
-  estado: 'ACTIVO' | 'USADO' | 'CANCELADO';
+  estado: 'RESERVADO' | 'OCUPADO' | 'CANCELADO';
   vendido_por: number;
 }
 
