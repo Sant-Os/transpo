@@ -638,7 +638,7 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                   <View>
                     <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>Origen de la Ruta</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-                      {['Uyuni', 'Ramaditas', 'Vila Vila', 'San Cristóbal', 'Culpina', 'Potosí', 'Otro'].map((loc) => (
+                      {['Uyuni', 'Ramaditas', 'Vila Vila', 'San Cristóbal', 'Culpina', 'Potosí'].map((loc) => (
                         <AnimatedPressable
                           key={`origen-${loc}`}
                           style={[
@@ -651,14 +651,6 @@ export default function AdminDashboardScreen({ navigation }: PropiedadesPantalla
                         </AnimatedPressable>
                       ))}
                     </ScrollView>
-                    {origenSeleccionado === 'Otro' && (
-                      <TextInput
-                        style={estilos.modalInput}
-                        placeholder="Escriba el origen a mano"
-                        value={origenManual}
-                        onChangeText={setOrigenManual}
-                      />
-                    )}
 
                     <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8, marginTop: 4 }]}>Destino de la Ruta</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
