@@ -1,281 +1,249 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
-import { OfflineQueue } from '../../services/OfflineQueue';
+import { ColaOffline } from '../../services/ColaOffline';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { User, Vehicle, Trip } from '../../types';
+import { Usuario, Vehiculo, Viaje } from '../../types';
 
-export interface DriverDashboardScreenProps {
+export interface PropiedadesPantallaChofer {
   navigation: any;
 }
 
-export default function DriverDashboardScreen({ navigation }: DriverDashboardScreenProps) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean>(true);
-  const [pendingEvents, setPendingEvents] = useState<number>(0);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+export default function DriverDashboardScreen({ navigation }: PropiedadesPantallaChofer) {
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [estaEnLinea, setEstaEnLinea] = useState<boolean>(true);
+  const [eventosPendientes, setEventosPendientes] = useState<number>(0);
+  const [refrescando, setRefrescando] = useState<boolean>(false);
 
   // Datos del viaje actual
-  const [currentTrip, setCurrentTrip] = useState<any>(null);
-  const [ticketCount, setTicketCount] = useState<number>(0);
-  const [parcelCount, setParcelCount] = useState<number>(0);
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [viajeActual, setViajeActual] = useState<any>(null);
+  const [cantidadBoletos, setCantidadBoletos] = useState<number>(0);
+  const [cantidadEncomiendas, setCantidadEncomiendas] = useState<number>(0);
+  const [vehiculo, setVehiculo] = useState<Vehiculo | null>(null);
 
   useEffect(() => {
-    loadData();
+    cargarDatos();
   }, []);
 
-  const loadData = async () => {
+  const cargarDatos = async () => {
     try {
-      const user = await AuthService.getCurrentUser();
-      setCurrentUser(user);
+      const usuario = await AuthService.getCurrentUser();
+      setUsuarioActual(usuario);
 
-      if (user) {
+      if (usuario) {
         // Cargar viaje actual del chofer
-        const { data: tripData } = await supabase
-          .from('trips')
+        const { data: viajeData } = await supabase
+          .from('viajes')
           .select(`
             *,
-            route:routes(name, origin, destination),
-            vehicle:vehicles(plate, model)
+            ruta:rutas(nombre, origen, destino),
+            vehiculo:vehiculos(placa, modelo)
           `)
-          .eq('driver_id', user.id)
-          .in('status', ['SCHEDULED', 'BOARDING', 'IN_PROGRESS'])
-          .order('trip_date', { ascending: false })
+          .eq('chofer_id', usuario.id)
+          .in('estado', ['PROGRAMADO', 'ABORDANDO', 'EN_RUTA'])
+          .order('fecha_viaje', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (tripData) {
-          setCurrentTrip(tripData);
-          setVehicle(tripData.vehicle as Vehicle);
+        if (viajeData) {
+          setViajeActual(viajeData);
+          setVehiculo(viajeData.vehiculo as Vehiculo);
 
           // Contar boletos del viaje
-          const { count: tickets } = await supabase
-            .from('tickets')
+          const { count: boletos } = await supabase
+            .from('boletos')
             .select('*', { count: 'exact', head: true })
-            .eq('trip_id', tripData.id)
-            .eq('status', 'ACTIVE');
-          setTicketCount(tickets || 0);
+            .eq('viaje_id', viajeData.id)
+            .eq('estado', 'ACTIVO');
+          setCantidadBoletos(boletos || 0);
 
           // Contar encomiendas del viaje
-          const { count: parcels } = await supabase
-            .from('parcels')
+          const { count: encomiendas } = await supabase
+            .from('encomiendas')
             .select('*', { count: 'exact', head: true })
-            .eq('trip_id', tripData.id);
-          setParcelCount(parcels || 0);
+            .eq('viaje_id', viajeData.id);
+          setCantidadEncomiendas(encomiendas || 0);
         } else {
-          setCurrentTrip(null);
-          setVehicle(null);
+          setViajeActual(null);
+          setVehiculo(null);
         }
       }
 
-      const size = await OfflineQueue.getQueueSize();
-      setPendingEvents(size);
+      const tamanoCola = await ColaOffline.obtenerTamanoCola();
+      setEventosPendientes(tamanoCola);
     } catch (error) {
       console.error('Error cargando datos del chofer:', error);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
+  const alternarRed = async () => {
+    const nuevoEstado = !estaEnLinea;
+    setEstaEnLinea(nuevoEstado);
+    await ColaOffline.establecerEstadoEnLinea(nuevoEstado);
 
-  const toggleNetwork = async () => {
-    const newState = !isOnline;
-    setIsOnline(newState);
-    await OfflineQueue.setOnlineStatus(newState);
-    const size = await OfflineQueue.getQueueSize();
-    setPendingEvents(size);
-  };
-
-  const handleAction = async (type: string, payload: any) => {
-    // Agregar trip_id al payload si hay viaje activo
-    if (currentTrip) {
-      payload.trip_id = currentTrip.id;
-    }
-    await OfflineQueue.addEvent(type, payload);
-    const size = await OfflineQueue.getQueueSize();
-    setPendingEvents(size);
-    alert(`Acción "${type}" registrada.\nEstado: ${isOnline ? 'Enviado' : 'Guardado Offline'}`);
-  };
-
-  const handleStartTrip = async () => {
-    if (currentTrip) {
-      await supabase
-        .from('trips')
-        .update({ status: 'IN_PROGRESS' })
-        .eq('id', currentTrip.id);
-      
-      handleAction('DEPARTURE_MARK', { 
-        location: currentTrip.route?.origin || 'Uyuni', 
-        time: Date.now() 
-      });
-      loadData();
-    } else {
-      alert('No tienes un viaje programado para hoy.');
+    if (nuevoEstado) {
+      // Procesar cola en segundo plano al volver a estar en línea
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await ColaOffline.sincronizar();
+      const tamanoCola = await ColaOffline.obtenerTamanoCola();
+      setEventosPendientes(tamanoCola);
     }
   };
 
-  const handleGPSAlert = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permiso de GPS denegado');
-      return;
-    }
-
+  const registrarEventoViaje = async (tipoEvento: string, datos: any = {}) => {
+    if (!viajeActual) return;
+    
     try {
-      let location = await Location.getCurrentPositionAsync({});
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await ColaOffline.agregarEvento(tipoEvento, datos);
+      const tamanoCola = await ColaOffline.obtenerTamanoCola();
+      setEventosPendientes(tamanoCola);
       
-      // Guardar alerta en la base de datos
-      if (currentTrip) {
-        await supabase.from('alerts').insert({
-          trip_id: currentTrip.id,
-          driver_id: currentUser?.id,
-          vehicle_id: currentTrip.vehicle_id,
-          alert_type: 'ROAD_BLOCK',
-          description: 'Alerta SOS del chofer en ruta',
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-          status: 'OPEN'
-        });
-      }
-
-      handleAction('ALERT_SOS', { 
-        reason: 'Bloqueo en ruta',
-        lat: location.coords.latitude,
-        lng: location.coords.longitude
-      });
+      alert('Evento registrado correctamente ' + (estaEnLinea ? 'y sincronizado.' : '(guardado localmente).'));
     } catch (e) {
-      alert('Error obteniendo ubicación GPS');
+      console.error(e);
+      alert('Error registrando evento.');
     }
   };
 
-  const handleLogout = async () => {
+  const iniciarSalidaViaje = () => {
+    registrarEventoViaje('INICIO_SALIDA', { hora: new Date().toISOString() });
+  };
+
+  const alertaBloqueoRuta = () => {
+    registrarEventoViaje('ALERTA_BLOQUEO', { descripcion: 'Bloqueo detectado en la carretera' });
+  };
+
+  const abrirEscaner = () => {
+    navigation.navigate('Scanner');
+  };
+
+  const manejarRefresco = async () => {
+    setRefrescando(true);
+    await cargarDatos();
+    setRefrescando(false);
+  };
+
+  const manejarCierreSesion = async () => {
     await AuthService.logout();
     navigation.replace('Login');
   };
 
-  const handleOpenScanner = () => {
-    navigation.navigate('Scanner');
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={estilos.contenedor}>
+      <View style={estilos.header}>
         <View>
-          <Text style={styles.headerTitle}>Dashboard Chofer</Text>
-          <Text style={styles.headerSubtitle}>
-            {vehicle ? `Vehículo: ${vehicle.plate}` : 'Sin vehículo asignado'}
+          <Text style={estilos.headerTitle}>Panel de Conductor</Text>
+          <Text style={estilos.headerSubtitle}>
+            {usuarioActual ? usuarioActual.nombre_completo : 'Chofer'}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={styles.networkToggleContainer}>
-            <Text style={styles.networkStatusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <View style={estilos.networkToggleContainer}>
+            <Text style={estilos.networkStatusText}>{estaEnLinea ? 'En Línea' : 'Sin Conexión'}</Text>
             <Switch
               trackColor={{ false: colors.danger, true: colors.success }}
               thumbColor={'#f4f3f4'}
-              onValueChange={toggleNetwork}
-              value={isOnline}
+              onValueChange={alternarRed}
+              value={estaEnLinea}
             />
           </View>
-          <AnimatedPressable style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
+          <AnimatedPressable style={estilos.iconButton} onPress={() => navigation.navigate('Chat')}>
             <Ionicons name="chatbubbles-outline" size={22} color={colors.primary} />
           </AnimatedPressable>
-          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
+          <AnimatedPressable style={estilos.iconButton} onPress={manejarCierreSesion}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           </AnimatedPressable>
         </View>
       </View>
 
-      {!isOnline && (
-        <View style={styles.offlineBanner}>
+      {!estaEnLinea && (
+        <View style={estilos.offlineBanner}>
           <Ionicons name="cloud-offline" size={20} color="#FFF" style={{ marginRight: 8 }} />
-          <Text style={styles.offlineText}>
-            Modo Offline Activo. {pendingEvents > 0 ? `(${pendingEvents} pendientes)` : ''}
+          <Text style={estilos.offlineText}>
+            Modo Offline Activo. {eventosPendientes > 0 ? `(${eventosPendientes} pendientes)` : ''}
           </Text>
         </View>
       )}
 
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={estilos.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          <RefreshControl refreshing={refrescando} onRefresh={manejarRefresco} colors={[colors.primary]} />
         }
       >
-        <Text style={styles.sectionTitle}>Mi Hoja de Ruta Actual</Text>
-        {currentTrip ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {currentTrip.route?.name || 'Ruta'} ({currentTrip.departure_time?.substring(0, 5) || '--:--'})
+        <Text style={estilos.sectionTitle}>Mi Hoja de Ruta Actual</Text>
+        {viajeActual ? (
+          <View style={estilos.card}>
+            <Text style={estilos.cardTitle}>
+              {viajeActual.ruta?.nombre || 'Ruta'} ({viajeActual.hora_salida?.substring(0, 5) || '--:--'})
             </Text>
-            <View style={styles.tripStatusContainer}>
-              <View style={[styles.tripStatusBadge, {
-                backgroundColor: currentTrip.status === 'IN_PROGRESS' ? colors.success : colors.primary
+            <View style={estilos.tripStatusContainer}>
+              <View style={[estilos.tripStatusBadge, {
+                backgroundColor: viajeActual.estado === 'EN_RUTA' ? colors.success : colors.primary
               }]}>
-                <Text style={styles.tripStatusText}>
-                  {currentTrip.status === 'SCHEDULED' ? 'Programado' :
-                   currentTrip.status === 'BOARDING' ? 'Abordando' :
-                   currentTrip.status === 'IN_PROGRESS' ? 'En Ruta' : currentTrip.status}
+                <Text style={estilos.tripStatusText}>
+                  {viajeActual.estado === 'PROGRAMADO' ? 'Programado' :
+                   viajeActual.estado === 'ABORDANDO' ? 'Abordando' :
+                   viajeActual.estado === 'EN_RUTA' ? 'En Ruta' : viajeActual.estado}
                 </Text>
               </View>
             </View>
-            <View style={styles.infoRow}>
+            <View style={estilos.infoRow}>
               <Ionicons name="people" size={20} color={colors.textSecondary} />
-              <Text style={styles.infoText}>{ticketCount} Pasajeros a bordo</Text>
+              <Text style={estilos.infoText}>{cantidadBoletos} Pasajeros a bordo</Text>
             </View>
-            <View style={styles.infoRow}>
+            <View style={estilos.infoRow}>
               <Ionicons name="cube" size={20} color={colors.textSecondary} />
-              <Text style={styles.infoText}>{parcelCount} Encomiendas</Text>
+              <Text style={estilos.infoText}>{cantidadEncomiendas} Encomiendas</Text>
             </View>
           </View>
         ) : (
-          <View style={styles.emptyCard}>
+          <View style={estilos.emptyCard}>
             <Ionicons name="calendar-outline" size={40} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No tienes viajes programados para hoy</Text>
+            <Text style={estilos.emptyText}>No tienes viajes programados para hoy</Text>
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Acciones en Ruta</Text>
+        <Text style={estilos.sectionTitle}>Acciones en Ruta</Text>
         
-        <View style={styles.actionsGrid}>
+        <View style={estilos.actionsGrid}>
           <AnimatedPressable 
-            style={styles.actionButton}
-            onPress={handleStartTrip}
+            style={estilos.actionButton}
+            onPress={iniciarSalidaViaje}
           >
             <Ionicons name="play" size={32} color={colors.primary} />
-            <Text style={styles.actionText}>Iniciar Salida</Text>
+            <Text style={estilos.actionText}>Iniciar Salida</Text>
           </AnimatedPressable>
 
           <AnimatedPressable 
-            style={styles.actionButton}
-            onPress={handleOpenScanner}
+            style={estilos.actionButton}
+            onPress={abrirEscaner}
           >
             <Ionicons name="qr-code-outline" size={32} color={colors.primary} />
-            <Text style={styles.actionText}>Escanear Encomienda</Text>
+            <Text style={estilos.actionText}>Escanear Encomienda</Text>
           </AnimatedPressable>
 
           <AnimatedPressable 
-            style={styles.actionButton}
-            onPress={() => handleAction('CHECKPOINT_MARK', { location: 'Parada intermedia' })}
+            style={estilos.actionButton}
+            onPress={() => registrarEventoViaje('REGISTRO_PARADA', { parada: 'Parada intermedia' })}
           >
             <Ionicons name="location" size={32} color={colors.primary} />
-            <Text style={styles.actionText}>Marcar Parada</Text>
+            <Text style={estilos.actionText}>Marcar Parada</Text>
           </AnimatedPressable>
 
           <AnimatedPressable 
-            style={[styles.actionButton, { borderColor: colors.danger }]}
-            onPress={handleGPSAlert}
+            style={[estilos.actionButton, { borderColor: colors.danger }]}
+            onPress={alertaBloqueoRuta}
           >
             <Ionicons name="warning" size={32} color={colors.danger} />
-            <Text style={[styles.actionText, { color: colors.danger }]}>Alerta GPS</Text>
+            <Text style={[estilos.actionText, { color: colors.danger }]}>Alerta de Vía</Text>
           </AnimatedPressable>
         </View>
       </ScrollView>
@@ -283,8 +251,8 @@ export default function DriverDashboardScreen({ navigation }: DriverDashboardScr
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   headerTitle: { ...typography.title2, color: colors.text },
   headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },

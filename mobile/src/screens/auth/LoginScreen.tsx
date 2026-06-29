@@ -10,31 +10,31 @@ import { AuthService } from '../../services/AuthService';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import Toast from '../../components/Toast';
 
-export interface LoginScreenProps {
+export interface PropiedadesPantallaLogin {
   navigation: any;
 }
 
-export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+export default function LoginScreen({ navigation }: PropiedadesPantallaLogin) {
+  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('error');
+  const [toastMensaje, setToastMensaje] = useState('');
+  const [toastTipo, setToastTipo] = useState<'success' | 'error' | 'info' | 'warning'>('error');
 
   // Animaciones de entrada
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const animacionDesvanecimiento = useRef(new Animated.Value(0)).current;
+  const animacionDesplazamiento = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
+      Animated.timing(animacionDesvanecimiento, {
         toValue: 1,
         duration: 800,
         useNativeDriver: true,
       }),
-      Animated.spring(slideAnim, {
+      Animated.spring(animacionDesplazamiento, {
         toValue: 0,
         useNativeDriver: true,
         speed: 12,
@@ -43,29 +43,29 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     ]).start();
   }, []);
 
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
-    setToastMessage(msg);
-    setToastType(type);
+  const mostrarToast = (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning' = 'error') => {
+    setToastMensaje(mensaje);
+    setToastTipo(tipo);
     setToastVisible(true);
   };
 
-  const handleLogin = async () => {
-    if (!username || !password) {
+  const manejarInicioSesion = async () => {
+    if (!nombreUsuario || !contrasena) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      showToast('Ingrese sus credenciales', 'warning');
+      mostrarToast('Ingrese sus credenciales', 'warning');
       return;
     }
 
-    setLoading(true);
+    setCargando(true);
     try {
-      const response = await AuthService.login(username, password);
+      const respuesta = await AuthService.login(nombreUsuario, contrasena);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const roles = response.roles || [];
-      if (roles.includes('ADMIN')) {
+      const roles = respuesta.roles || [];
+      if (roles.includes('ADMINISTRADOR')) {
         navigation.replace('AdminDashboard');
-      } else if (roles.includes('SECRETARY')) {
+      } else if (roles.includes('SECRETARIA')) {
         navigation.replace('SecretaryPOS');
-      } else if (roles.includes('DRIVER')) {
+      } else if (roles.includes('CHOFER')) {
         navigation.replace('DriverDashboard');
       } else if (roles.includes('SOCIO')) {
         navigation.replace('SocioDashboard');
@@ -74,50 +74,50 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       }
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast(error.message || 'Credenciales incorrectas', 'error');
+      mostrarToast(error.message || 'Credenciales incorrectas', 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={estilos.contenedor}>
       <Toast
         visible={toastVisible}
-        message={toastMessage}
-        type={toastType}
+        message={toastMensaje}
+        type={toastTipo}
         onDismiss={() => setToastVisible(false)}
       />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
+        style={estilos.contenido}
       >
-        <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[estilos.contenedorCabecera, { opacity: animacionDesvanecimiento, transform: [{ translateY: animacionDesplazamiento }] }]}>
           {/* Logo circular con gradiente */}
           <LinearGradient
             colors={colors.gradientBlue as [string, string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.logoCircle}
+            style={estilos.circuloLogo}
           >
             <Ionicons name="bus" size={40} color="#FFFFFF" />
           </LinearGradient>
 
-          <Text style={styles.title}>Sindicato Trans</Text>
-          <Text style={styles.subtitle}>Gestión Integral de Flota</Text>
+          <Text style={estilos.titulo}>Sindicato Trans</Text>
+          <Text style={estilos.subtitulo}>Gestión Integral de Flota</Text>
         </Animated.View>
 
-        <Animated.View style={[styles.formContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[estilos.contenedorFormulario, { opacity: animacionDesvanecimiento, transform: [{ translateY: animacionDesplazamiento }] }]}>
           {/* Input Usuario */}
-          <View style={styles.inputContainer}>
+          <View style={estilos.contenedorInput}>
             <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
             <TextInput
-              style={styles.input}
+              style={estilos.input}
               placeholder="Usuario"
               placeholderTextColor={colors.textTertiary}
-              value={username}
-              onChangeText={setUsername}
+              value={nombreUsuario}
+              onChangeText={setNombreUsuario}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
@@ -125,21 +125,21 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           </View>
 
           {/* Input Contraseña */}
-          <View style={styles.inputContainer}>
+          <View style={estilos.contenedorInput}>
             <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
             <TextInput
-              style={styles.input}
+              style={estilos.input}
               placeholder="Contraseña"
               placeholderTextColor={colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
+              value={contrasena}
+              onChangeText={setContrasena}
+              secureTextEntry={!mostrarContrasena}
               returnKeyType="done"
-              onSubmitEditing={handleLogin}
+              onSubmitEditing={manejarInicioSesion}
             />
-            <AnimatedPressable onPress={() => setShowPassword(!showPassword)} haptic={false}>
+            <AnimatedPressable onPress={() => setMostrarContrasena(!mostrarContrasena)} haptic={false}>
               <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                name={mostrarContrasena ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
                 color={colors.textSecondary}
               />
@@ -148,67 +148,66 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
           {/* Botón Login */}
           <AnimatedPressable
-            style={styles.loginButton}
-            onPress={handleLogin}
-            disabled={loading}
+            style={estilos.botonLogin}
+            onPress={manejarInicioSesion}
+            disabled={cargando}
           >
-            {loading ? (
+            {cargando ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.loginButtonText}>Ingresar</Text>
+              <Text style={estilos.textoBotonLogin}>Ingresar</Text>
             )}
           </AnimatedPressable>
         </Animated.View>
 
-        <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
-          <Text style={styles.footerText}>Sistema de Transporte Sindical v1.0</Text>
+        <Animated.View style={[estilos.piePagina, { opacity: animacionDesvanecimiento }]}>
+          <Text style={estilos.textoPiePagina}>Sistema de Transporte Sindical v1.0</Text>
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const estilos = StyleSheet.create({
+  contenedor: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  contenido: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  headerContainer: {
+  contenedorCabecera: {
     alignItems: 'center',
     marginBottom: 40,
   },
-  logoCircle: {
+  circuloLogo: {
     width: 80,
     height: 80,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    // Apple shadow
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
   },
-  title: {
+  titulo: {
     ...typography.largeTitle,
     color: colors.text,
   },
-  subtitle: {
+  subtitulo: {
     ...typography.subhead,
     color: colors.textSecondary,
     marginTop: 4,
   },
-  formContainer: {
+  contenedorFormulario: {
     gap: 12,
   },
-  inputContainer: {
+  contenedorInput: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -223,29 +222,28 @@ const styles = StyleSheet.create({
     color: colors.text,
     height: '100%',
   },
-  loginButton: {
+  botonLogin: {
     backgroundColor: colors.primary,
     borderRadius: 14,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    // Apple shadow
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  loginButtonText: {
+  textoBotonLogin: {
     ...typography.headline,
     color: '#FFFFFF',
   },
-  footer: {
+  piePagina: {
     alignItems: 'center',
     marginTop: 48,
   },
-  footerText: {
+  textoPiePagina: {
     ...typography.caption1,
     color: colors.textTertiary,
   },

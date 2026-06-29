@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -14,7 +14,7 @@ import AnimatedPressable from './AnimatedPressable';
  * Fila 5: [12] [13] [Pasillo] [14]
  * Fila 6: [15] [16] [17] [18]
  */
-const layout: (number | null)[][] = [
+const distribucionAsientos: (number | null)[][] = [
   [null, 1, 2],
   [3, 4, null, 5],
   [6, 7, null, 8],
@@ -23,87 +23,87 @@ const layout: (number | null)[][] = [
   [15, 16, 17, 18]
 ];
 
-export interface SeatMapProps {
-  seatsData?: Record<number, 'free' | 'reserved' | 'occupied' | string>;
-  onSeatPress?: (seatNumber: number, status: string) => void;
+export interface PropiedadesMapaAsientos {
+  datosAsientos?: Record<number, 'libre' | 'seleccionado' | 'ocupado' | string>;
+  alPresionarAsiento?: (numeroAsiento: number, estado: string) => void;
 }
 
-export default function SeatMap({ seatsData = {}, onSeatPress }: SeatMapProps) {
+export default function SeatMap({ datosAsientos = {}, alPresionarAsiento }: PropiedadesMapaAsientos) {
 
-  const renderSeat = (seatNumber: number | null, index: string | number) => {
-    if (!seatNumber) return <View style={styles.emptySpace} key={`empty-${index}`} />;
+  const renderizarAsiento = (numeroAsiento: number | null, indice: string | number) => {
+    if (!numeroAsiento) return <View style={estilos.espacioVacio} key={`vacio-${indice}`} />;
 
-    const status = seatsData[seatNumber] || 'free';
-    let bgColor = colors.seatFree;
-    let textColor = '#FFFFFF';
+    const estado = datosAsientos[numeroAsiento] || 'libre';
+    let colorFondo = colors.seatFree;
+    let colorTexto = '#FFFFFF';
 
-    if (status === 'reserved') bgColor = colors.seatReserved;
-    if (status === 'occupied') bgColor = colors.seatOccupied;
+    if (estado === 'seleccionado') colorFondo = colors.seatReserved;
+    if (estado === 'ocupado') colorFondo = colors.seatOccupied;
 
     return (
       <AnimatedPressable
-        key={seatNumber}
-        style={[styles.seat, { backgroundColor: bgColor }]}
-        onPress={() => onSeatPress && onSeatPress(seatNumber, status)}
+        key={numeroAsiento}
+        style={[estilos.asiento, { backgroundColor: colorFondo }]}
+        onPress={() => alPresionarAsiento && alPresionarAsiento(numeroAsiento, estado)}
         haptic={true}
         scaleValue={0.90}
       >
-        <View style={styles.seatBack} />
-        <Text style={[styles.seatText, { color: textColor }]}>{seatNumber}</Text>
+        <View style={estilos.respaldoAsiento} />
+        <Text style={[estilos.textoAsiento, { color: colorTexto }]}>{numeroAsiento}</Text>
       </AnimatedPressable>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={estilos.contenedor}>
       {/* Sección del conductor */}
-      <View style={styles.driverSection}>
-        <View style={styles.steeringWheel}>
+      <View style={estilos.seccionConductor}>
+        <View style={estilos.volante}>
           <Ionicons name="car-sport-outline" size={22} color={colors.textSecondary} />
         </View>
-        <View style={styles.frontSeats}>
-          {renderSeat(layout[0][1], 'front-1')}
-          {renderSeat(layout[0][2], 'front-2')}
+        <View style={estilos.asientosDelanteros}>
+          {renderizarAsiento(distribucionAsientos[0][1], 'delantero-1')}
+          {renderizarAsiento(distribucionAsientos[0][2], 'delantero-2')}
         </View>
       </View>
 
       {/* Separador pasillo */}
-      <View style={styles.aisleIndicator}>
-        <View style={styles.aisleLine} />
-        <Text style={styles.aisleText}>PASILLO</Text>
-        <View style={styles.aisleLine} />
+      <View style={estilos.indicadorPasillo}>
+        <View style={estilos.lineaPasillo} />
+        <Text style={estilos.textoPasillo}>PASILLO</Text>
+        <View style={estilos.lineaPasillo} />
       </View>
 
       {/* Sección de pasajeros */}
-      <View style={styles.passengerSection}>
-        {layout.slice(1).map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={styles.row}>
-            {row.map((seat, colIndex) => renderSeat(seat, `${rowIndex}-${colIndex}`))}
+      <View style={estilos.seccionPasajeros}>
+        {distribucionAsientos.slice(1).map((fila, indiceFila) => (
+          <View key={`fila-${indiceFila}`} style={estilos.fila}>
+            {fila.map((asiento, indiceColumna) => renderizarAsiento(asiento, `${indiceFila}-${indiceColumna}`))}
           </View>
         ))}
       </View>
 
       {/* Leyenda */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.seatFree }]} />
-          <Text style={styles.legendText}>Libre</Text>
+      <View style={estilos.leyenda}>
+        <View style={estilos.itemLeyenda}>
+          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatFree }]} />
+          <Text style={estilos.textoLeyenda}>Libre</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.seatReserved }]} />
-          <Text style={styles.legendText}>Seleccionado</Text>
+        <View style={estilos.itemLeyenda}>
+          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatReserved }]} />
+          <Text style={estilos.textoLeyenda}>Seleccionado</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.seatOccupied }]} />
-          <Text style={styles.legendText}>Ocupado</Text>
+        <View style={estilos.itemLeyenda}>
+          <View style={[estilos.puntoLeyenda, { backgroundColor: colors.seatOccupied }]} />
+          <Text style={estilos.textoLeyenda}>Ocupado</Text>
         </View>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const estilos = StyleSheet.create({
+  contenedor: {
     backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
@@ -111,21 +111,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
-    // Apple shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
   },
-  driverSection: {
+  seccionConductor: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
     marginBottom: 8,
     paddingBottom: 16,
   },
-  steeringWheel: {
+  volante: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -133,37 +132,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  frontSeats: {
+  asientosDelanteros: {
     flexDirection: 'row',
     gap: 12,
   },
-  aisleIndicator: {
+  indicadorPasillo: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
     marginBottom: 16,
     gap: 8,
   },
-  aisleLine: {
+  lineaPasillo: {
     flex: 1,
     height: 1,
     backgroundColor: colors.separator,
   },
-  aisleText: {
+  textoPasillo: {
     ...typography.caption2,
     color: colors.textTertiary,
     letterSpacing: 2,
   },
-  passengerSection: {
+  seccionPasajeros: {
     width: '100%',
     gap: 12,
   },
-  row: {
+  fila: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
   },
-  seat: {
+  asiento: {
     width: 52,
     height: 56,
     borderRadius: 14,
@@ -173,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  seatBack: {
+  respaldoAsiento: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -183,16 +182,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
   },
-  seatText: {
+  textoAsiento: {
     ...typography.headline,
     color: '#FFFFFF',
     marginTop: 2,
   },
-  emptySpace: {
+  espacioVacio: {
     width: 52,
     height: 56,
   },
-  legend: {
+  leyenda: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 20,
@@ -202,17 +201,17 @@ const styles = StyleSheet.create({
     borderTopColor: colors.separator,
     width: '100%',
   },
-  legendItem: {
+  itemLeyenda: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  legendDot: {
+  puntoLeyenda: {
     width: 10,
     height: 10,
     borderRadius: 5,
   },
-  legendText: {
+  textoLeyenda: {
     ...typography.caption1,
     color: colors.textSecondary,
   },

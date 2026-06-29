@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,38 +8,38 @@ import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
 import AnimatedPressable from '../components/AnimatedPressable';
 
-export interface ScannerScreenProps {
+export interface PropiedadesPantallaEscaner {
   navigation: any;
 }
 
-export interface BarCodeScannedEvent {
+export interface EventoCodigoEscaneado {
   type: string;
   data: string;
 }
 
-export default function ScannerScreen({ navigation }: ScannerScreenProps) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState<boolean>(false);
+export default function ScannerScreen({ navigation }: PropiedadesPantallaEscaner) {
+  const [permiso, solicitarPermiso] = useCameraPermissions();
+  const [escaneado, setEscaneado] = useState<boolean>(false);
 
-  const handleBarCodeScanned = async ({ type, data }: BarCodeScannedEvent) => {
-    setScanned(true);
+  const manejarCodigoEscaneado = async ({ type, data }: EventoCodigoEscaneado) => {
+    setEscaneado(true);
     try {
       // Buscar y actualizar encomienda por id o por código qr
-      const isNumber = !isNaN(Number(data));
-      let query = supabase.from('parcels').update({ status: 'IN_TRANSIT' });
+      const esNumero = !isNaN(Number(data));
+      let consulta = supabase.from('encomiendas').update({ estado: 'EN_RUTA' });
       
-      if (isNumber) {
-        query = query.eq('id', parseInt(data));
+      if (esNumero) {
+        consulta = consulta.eq('id', parseInt(data));
       } else {
-        query = query.eq('qr_code', data);
+        consulta = consulta.eq('codigo_qr', data);
       }
       
-      const { data: updatedData, error } = await query.select();
+      const { data: datosActualizados, error } = await consulta.select();
       
       if (error) throw error;
       
-      if (updatedData && updatedData.length > 0) {
-        alert(`¡Encomienda Escaneada!\nEstado: En Tránsito\nDetalle: ${updatedData[0].description}`);
+      if (datosActualizados && datosActualizados.length > 0) {
+        alert(`¡Encomienda Escaneada!\nEstado: En Ruta\nDetalle: ${datosActualizados[0].descripcion}`);
       } else {
         alert(`Escaneado: "${data}"\n(No se encontró encomienda registrada en la base de datos)`);
       }
@@ -52,39 +52,41 @@ export default function ScannerScreen({ navigation }: ScannerScreenProps) {
     }
   };
 
-  if (!permission) {
-    return <View style={styles.centerContainer}><Text>Cargando permisos...</Text></View>;
+  if (!permiso) {
+    return <View style={estilos.contenedorCentro}><Text>Cargando permisos...</Text></View>;
   }
-  if (!permission.granted) {
+  if (!permiso.granted) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={estilos.contenedorCentro}>
         <Text style={{ textAlign: 'center', marginBottom: 16 }}>No se tiene acceso a la cámara</Text>
-        <Button title="Conceder Permiso" onPress={requestPermission} />
+        <AnimatedPressable style={estilos.botonPermiso} onPress={solicitarPermiso}>
+          <Text style={estilos.textoBotonPermiso}>Conceder Permiso</Text>
+        </AnimatedPressable>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={estilos.contenedor}>
+      <View style={estilos.header}>
         <AnimatedPressable onPress={() => navigation.goBack()} style={{ padding: 8 }}>
            <Ionicons name="close" size={28} color="#FFF" />
         </AnimatedPressable>
-        <Text style={styles.headerTitle}>Escáner QR</Text>
+        <Text style={estilos.headerTitle}>Escáner QR</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <CameraView
-        style={styles.camera}
+        style={estilos.camara}
         facing="back"
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={escaneado ? undefined : manejarCodigoEscaneado}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
       >
-        <View style={styles.overlay}>
-           <View style={styles.scanFrame} />
-           <Text style={styles.overlayText}>
+        <View style={estilos.superposicion}>
+           <View style={estilos.marcoEscaneo} />
+           <Text style={estilos.textoSuperposicion}>
              Enfoque el código QR de la encomienda o pasaje
            </Text>
         </View>
@@ -93,13 +95,15 @@ export default function ScannerScreen({ navigation }: ScannerScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: '#000' },
+  contenedorCentro: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: 'rgba(0,0,0,0.7)' },
   headerTitle: { ...typography.headline, color: '#FFF' },
-  camera: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  scanFrame: { width: 260, height: 260, borderWidth: 3, borderColor: colors.primary, borderRadius: 20, backgroundColor: 'transparent' },
-  overlayText: { ...typography.subhead, color: 'rgba(255,255,255,0.8)', marginTop: 24, textAlign: 'center', paddingHorizontal: 32 },
+  camara: { flex: 1 },
+  superposicion: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  marcoEscaneo: { width: 260, height: 260, borderWidth: 3, borderColor: colors.primary, borderRadius: 20, backgroundColor: 'transparent' },
+  textoSuperposicion: { ...typography.subhead, color: 'rgba(255,255,255,0.8)', marginTop: 24, textAlign: 'center', paddingHorizontal: 32 },
+  botonPermiso: { paddingVertical: 12, paddingHorizontal: 24, backgroundColor: colors.primary, borderRadius: 12 },
+  textoBotonPermiso: { ...typography.body, color: '#FFF', fontFamily: typography.fontFamilySemiBold }
 });

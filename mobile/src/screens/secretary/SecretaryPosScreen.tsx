@@ -11,206 +11,206 @@ import SeatMap from '../../components/SeatMap';
 import SegmentedControl from '../../components/SegmentedControl';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import Toast from '../../components/Toast';
-import { User, Trip, Segment, Ticket, CashRegister } from '../../types';
+import { Usuario, Viaje, Tramo, Boleto, CajaDiaria } from '../../types';
 
-export interface SecretaryPosScreenProps {
+export interface PropiedadesPantallaBoleteria {
   navigation: any;
 }
 
-export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenProps) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+export default function SecretaryPosScreen({ navigation }: PropiedadesPantallaBoleteria) {
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [indicePestanaActiva, setIndicePestanaActiva] = useState<number>(0);
+  const [cargando, setCargando] = useState<boolean>(false);
+  const [refrescando, setRefrescando] = useState<boolean>(false);
 
   // Toast
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+  const [toastMensaje, setToastMensaje] = useState('');
+  const [toastTipo, setToastTipo] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
   // Datos comunes
-  const [tripsList, setTripsList] = useState<any[]>([]);
-  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [listaViajes, setListaViajes] = useState<any[]>([]);
+  const [viajeSeleccionadoId, setViajeSeleccionadoId] = useState<string | null>(null);
 
   // TAB 1: Pasajes
-  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
-  const [passengerName, setPassengerName] = useState<string>('');
-  const [passengerCI, setPassengerCI] = useState<string>('');
-  const [startSegment, setStartSegment] = useState<string>('Uyuni');
-  const [endSegment, setEndSegment] = useState<string>('San Cristóbal');
+  const [asientoSeleccionado, setAsientoSeleccionado] = useState<number | null>(null);
+  const [nombrePasajero, setNombrePasajero] = useState<string>('');
+  const [ciPasajero, setCiPasajero] = useState<string>('');
+  const [tramoOrigen, setTramoOrigen] = useState<string>('Uyuni');
+  const [tramoDestino, setTramoDestino] = useState<string>('San Cristóbal');
 
-  const [segmentsList, setSegmentsList] = useState<Segment[]>([]);
-  const [ticketPrice, setTicketPrice] = useState<number>(35.00);
-  const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
-  const [occupiedSeats, setOccupiedSeats] = useState<number[]>([]);
+  const [listaTramos, setListaTramos] = useState<Tramo[]>([]);
+  const [precioBoleto, setPrecioBoleto] = useState<number>(35.00);
+  const [destinoSeleccionadoId, setDestinoSeleccionadoId] = useState<string | null>(null);
+  const [asientosOcupados, setAsientosOcupados] = useState<number[]>([]);
 
-  const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
-  const [lastSoldTicket, setLastSoldTicket] = useState<any>(null);
+  const [mostrarReciboModal, setMostrarReciboModal] = useState<boolean>(false);
+  const [ultimoBoletoVendido, setUltimoBoletoVendido] = useState<any>(null);
 
   // TAB 2: Encomiendas
-  const [senderName, setSenderName] = useState<string>('');
-  const [senderCI, setSenderCI] = useState<string>('');
-  const [senderPhone, setSenderPhone] = useState<string>('');
-  const [receiverName, setReceiverName] = useState<string>('');
-  const [receiverCI, setReceiverCI] = useState<string>('');
-  const [receiverPhone, setReceiverPhone] = useState<string>('');
-  const [parcelDesc, setParcelDesc] = useState<string>('');
-  const [parcelWeight, setParcelWeight] = useState<string>('');
-  const [parcelPrice, setParcelPrice] = useState<string>('');
-  const [parcelsList, setParcelsList] = useState<any[]>([]);
+  const [nombreRemitente, setNombreRemitente] = useState<string>('');
+  const [ciRemitente, setCiRemitente] = useState<string>('');
+  const [telefonoRemitente, setTelefonoRemitente] = useState<string>('');
+  const [nombreDestinatario, setNombreDestinatario] = useState<string>('');
+  const [ciDestinatario, setCiDestinatario] = useState<string>('');
+  const [telefonoDestinatario, setTelefonoDestinatario] = useState<string>('');
+  const [descripcionEncomienda, setDescripcionEncomienda] = useState<string>('');
+  const [pesoEncomienda, setPesoEncomienda] = useState<string>('');
+  const [precioEncomienda, setPrecioEncomienda] = useState<string>('');
+  const [listaEncomiendas, setListaEncomiendas] = useState<any[]>([]);
 
   // TAB 3: Caja y Gastos
-  const [expenseConcept, setExpenseConcept] = useState<string>('');
-  const [expenseAmount, setExpenseAmount] = useState<string>('');
-  const [mySalesToday, setMySalesToday] = useState<any[]>([]);
-  const [officeIncomes, setOfficeIncomes] = useState<number>(0);
-  const [officeExpenses, setOfficeExpenses] = useState<number>(0);
+  const [conceptoGasto, setConceptoGasto] = useState<string>('');
+  const [montoGasto, setMontoGasto] = useState<string>('');
+  const [misVentasHoy, setMisVentasHoy] = useState<any[]>([]);
+  const [ingresosOficina, setIngresosOficina] = useState<number>(0);
+  const [egresosOficina, setEgresosOficina] = useState<number>(0);
 
   // Cuentas Corporativas
-  const [corporateAccountsList, setCorporateAccountsList] = useState<any[]>([]);
-  const [selectedCorpId, setSelectedCorpId] = useState<string | null>(null);
-  const [isCorporate, setIsCorporate] = useState<boolean>(false);
+  const [listaCuentasCorp, setListaCuentasCorp] = useState<any[]>([]);
+  const [corpSeleccionadaId, setCorpSeleccionadaId] = useState<string | null>(null);
+  const [esCorporativo, setEsCorporativo] = useState<boolean>(false);
 
   // Apertura y Cierre de Caja
-  const [cashRegister, setCashRegister] = useState<CashRegister | null>(null);
-  const [initialCashInput, setInitialCashInput] = useState<string>('100.00');
-  const [showCashOpenModal, setShowCashOpenModal] = useState<boolean>(false);
-  const [showCashCloseModal, setShowCashCloseModal] = useState<boolean>(false);
-  const [finalCashInput, setFinalCashInput] = useState<string>('0.00');
+  const [cajaDiaria, setCajaDiaria] = useState<CajaDiaria | null>(null);
+  const [montoInicialCaja, setMontoInicialCaja] = useState<string>('100.00');
+  const [mostrarModalAbrirCaja, setMostrarModalAbrirCaja] = useState<boolean>(false);
+  const [mostrarModalCerrarCaja, setMostrarModalCerrarCaja] = useState<boolean>(false);
+  const [montoFinalCajaInput, setMontoFinalCajaInput] = useState<string>('0.00');
 
-  const tabNames = ['Pasajes', 'Encomiendas', 'Salidas', 'Caja'];
+  const nombresPestanas = ['Pasajes', 'Encomiendas', 'Salidas', 'Caja'];
 
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
-    setToastMessage(msg);
-    setToastType(type);
+  const mostrarToast = (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setToastMensaje(mensaje);
+    setToastTipo(tipo);
     setToastVisible(true);
   };
 
   useEffect(() => {
-    loadInitialData();
+    cargarDatosIniciales();
   }, []);
 
-  const loadInitialData = async () => {
-    setLoading(true);
+  const cargarDatosIniciales = async () => {
+    setCargando(true);
     try {
-      const user = await AuthService.getCurrentUser();
-      setCurrentUser(user);
+      const usuario = await AuthService.getCurrentUser();
+      setUsuarioActual(usuario);
 
-      if (user) {
-        const { data: activeReg } = await supabase
-          .from('cash_registers')
+      if (usuario) {
+        const { data: registroActivo } = await supabase
+          .from('cajas_diarias')
           .select('*')
-          .eq('opened_by', user.id)
-          .eq('status', 'OPEN')
+          .eq('abierta_por', usuario.id)
+          .eq('estado', 'ABIERTO')
           .limit(1)
           .maybeSingle();
 
-        if (activeReg) {
-          setCashRegister(activeReg as CashRegister);
+        if (registroActivo) {
+          setCajaDiaria(registroActivo as CajaDiaria);
         } else {
-          setShowCashOpenModal(true);
+          setMostrarModalAbrirCaja(true);
         }
       }
 
-      const { data: trips } = await supabase
-        .from('trips')
-        .select('*, route:routes(name, origin, destination), vehicle:vehicles(plate, model), driver:users(full_name)')
-        .order('departure_time', { ascending: true });
+      const { data: viajes } = await supabase
+        .from('viajes')
+        .select('*, ruta:rutas(nombre, origen, destino), vehiculo:vehiculos(placa, modelo), chofer:usuarios(nombre_completo)')
+        .order('hora_salida', { ascending: true });
 
-      if (trips && trips.length > 0) {
-        setTripsList(trips);
-        setSelectedTripId(trips[0].id.toString());
+      if (viajes && viajes.length > 0) {
+        setListaViajes(viajes);
+        setViajeSeleccionadoId(viajes[0].id.toString());
       }
 
-      const { data: segments } = await supabase
-        .from('segments')
+      const { data: tramos } = await supabase
+        .from('tramos')
         .select('*')
-        .order('order_index', { ascending: true });
+        .order('indice_orden', { ascending: true });
 
-      if (segments && segments.length > 0) {
-        setSegmentsList(segments as Segment[]);
-        const lastSeg = segments[segments.length - 1];
-        setEndSegment(lastSeg.destination);
-        setSelectedDestId(lastSeg.id.toString());
-        setTicketPrice(parseFloat(lastSeg.price));
+      if (tramos && tramos.length > 0) {
+        setListaTramos(tramos as Tramo[]);
+        const ultimoTramo = tramos[tramos.length - 1];
+        setTramoDestino(ultimoTramo.destino);
+        setDestinoSeleccionadoId(ultimoTramo.id.toString());
+        setPrecioBoleto(parseFloat(ultimoTramo.precio));
       }
 
-      const { data: corps } = await supabase
-        .from('corporate_accounts')
+      const { data: cuentasCorp } = await supabase
+        .from('cuentas_corporativas')
         .select('*')
-        .eq('is_active', true);
-      if (corps) {
-        setCorporateAccountsList(corps);
-        if (corps.length > 0) setSelectedCorpId(corps[0].id.toString());
+        .eq('activo', true);
+      if (cuentasCorp) {
+        setListaCuentasCorp(cuentasCorp);
+        if (cuentasCorp.length > 0) setCorpSeleccionadaId(cuentasCorp[0].id.toString());
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
   useEffect(() => {
-    if (!selectedTripId) return;
-    fetchTripDetails();
+    if (!viajeSeleccionadoId) return;
+    obtenerDetallesViaje();
 
-    const ticketSubscription = supabase
-      .channel(`realtime_tickets_trip_${selectedTripId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `trip_id=eq.${selectedTripId}` }, () => { fetchTripDetails(); })
+    const canalBoletos = supabase
+      .channel(`canal_realtime_boletos_viaje_${viajeSeleccionadoId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'boletos', filter: `viaje_id=eq.${viajeSeleccionadoId}` }, () => { obtenerDetallesViaje(); })
       .subscribe();
 
-    const tripSubscription = supabase
-      .channel('realtime_trips')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips' }, () => { loadInitialData(); })
+    const canalViajes = supabase
+      .channel('canal_realtime_viajes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'viajes' }, () => { cargarDatosIniciales(); })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(ticketSubscription);
-      supabase.removeChannel(tripSubscription);
+      supabase.removeChannel(canalBoletos);
+      supabase.removeChannel(canalViajes);
     };
-  }, [selectedTripId]);
+  }, [viajeSeleccionadoId]);
 
-  const fetchTripDetails = async () => {
-    if (!selectedTripId) return;
+  const obtenerDetallesViaje = async () => {
+    if (!viajeSeleccionadoId) return;
     try {
-      const { data: tickets } = await supabase
-        .from('tickets')
-        .select('seat_number')
-        .eq('trip_id', parseInt(selectedTripId))
-        .eq('status', 'ACTIVE');
+      const { data: boletos } = await supabase
+        .from('boletos')
+        .select('numero_asiento')
+        .eq('viaje_id', parseInt(viajeSeleccionadoId))
+        .eq('estado', 'ACTIVO');
 
-      if (tickets) {
-        setOccupiedSeats(tickets.map((t: any) => t.seat_number));
+      if (boletos) {
+        setAsientosOcupados(boletos.map((b: any) => b.numero_asiento));
       } else {
-        setOccupiedSeats([]);
+        setAsientosOcupados([]);
       }
 
-      const { data: parcels } = await supabase
-        .from('parcels')
+      const { data: encomiendas } = await supabase
+        .from('encomiendas')
         .select('*')
-        .eq('trip_id', parseInt(selectedTripId))
-        .order('created_at', { ascending: false });
+        .eq('viaje_id', parseInt(viajeSeleccionadoId))
+        .order('creado_en', { ascending: false });
 
-      if (parcels) setParcelsList(parcels);
+      if (encomiendas) setListaEncomiendas(encomiendas);
 
-      if (currentUser) {
-        const { data: sales } = await supabase
-          .from('tickets')
-          .select('*, trip:trips(departure_time, route:routes(name))')
-          .eq('sold_by', currentUser.id)
-          .order('created_at', { ascending: false });
-        if (sales) setMySalesToday(sales);
+      if (usuarioActual) {
+        const { data: ventas } = await supabase
+          .from('boletos')
+          .select('*, viaje:viajes(hora_salida, ruta:rutas(nombre))')
+          .eq('vendido_por', usuarioActual.id)
+          .order('creado_en', { ascending: false });
+        if (ventas) setMisVentasHoy(ventas);
 
-        const { data: finances } = await supabase
-          .from('finances')
+        const { data: finanzas } = await supabase
+          .from('finanzas')
           .select('*')
-          .eq('user_id', currentUser.id);
+          .eq('usuario_id', usuarioActual.id);
 
-        if (finances) {
-          const inc = finances.filter((f: any) => f.type === 'INCOME').reduce((sum, f) => sum + parseFloat(f.amount), 0);
-          const exp = finances.filter((f: any) => f.type === 'EXPENSE').reduce((sum, f) => sum + parseFloat(f.amount), 0);
-          setOfficeIncomes(inc);
-          setOfficeExpenses(exp);
+        if (finanzas) {
+          const inc = finanzas.filter((f: any) => f.tipo === 'INGRESO').reduce((suma, f) => suma + parseFloat(f.monto), 0);
+          const exp = finanzas.filter((f: any) => f.tipo === 'EGRESO').reduce((suma, f) => suma + parseFloat(f.monto), 0);
+          setIngresosOficina(inc);
+          setEgresosOficina(exp);
         }
       }
     } catch (e) {
@@ -218,301 +218,301 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
     }
   };
 
-  const handleLogout = async () => {
+  const manejarCierreSesion = async () => {
     await AuthService.logout();
     navigation.replace('Login');
   };
 
-  const handleOpenCashRegister = async () => {
-    if (!initialCashInput) { showToast('Ingrese un monto inicial', 'warning'); return; }
+  const manejarAperturaCaja = async () => {
+    if (!montoInicialCaja) { mostrarToast('Ingrese un monto inicial', 'warning'); return; }
     try {
-      setLoading(true);
+      setCargando(true);
       const { data, error } = await supabase
-        .from('cash_registers')
-        .insert({ opened_by: currentUser?.id, initial_amount: parseFloat(initialCashInput), status: 'OPEN' })
+        .from('cajas_diarias')
+        .insert({ abierta_por: usuarioActual?.id, monto_inicial: parseFloat(montoInicialCaja), estado: 'ABIERTO' })
         .select()
         .single();
       if (error) throw error;
-      setCashRegister(data as CashRegister);
-      setShowCashOpenModal(false);
+      setCajaDiaria(data as CajaDiaria);
+      setMostrarModalAbrirCaja(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Caja abierta con éxito', 'success');
+      mostrarToast('Caja abierta con éxito', 'success');
     } catch (e: any) {
-      showToast('Error abriendo caja: ' + e.message, 'error');
+      mostrarToast('Error abriendo caja: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleCloseCashRegister = async () => {
-    if (!cashRegister) return;
+  const manejarCierreCaja = async () => {
+    if (!cajaDiaria) return;
     try {
-      setLoading(true);
+      setCargando(true);
       const { error } = await supabase
-        .from('cash_registers')
-        .update({ closed_at: new Date().toISOString(), final_amount: parseFloat(finalCashInput), status: 'CLOSED' })
-        .eq('id', cashRegister.id);
+        .from('cajas_diarias')
+        .update({ cerrada_en: new Date().toISOString(), monto_final: parseFloat(montoFinalCajaInput), estado: 'CERRADO' })
+        .eq('id', cajaDiaria.id);
       if (error) throw error;
-      setCashRegister(null);
-      setShowCashCloseModal(false);
+      setCajaDiaria(null);
+      setMostrarModalCerrarCaja(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Caja cerrada con éxito', 'success');
-      setShowCashOpenModal(true);
+      mostrarToast('Caja cerrada con éxito', 'success');
+      setMostrarModalAbrirCaja(true);
     } catch (e: any) {
-      showToast('Error cerrando caja: ' + e.message, 'error');
+      mostrarToast('Error cerrando caja: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleShareWhatsApp = () => {
-    if (!lastSoldTicket) return;
-    const message = `*SINDICATO TRANS — BOLETO DE VIAJE*\n\n` +
-      `*Boleto ID:* #${lastSoldTicket.id}\n` +
-      `*Pasajero:* ${lastSoldTicket.passenger_name}\n` +
-      `*C.I.:* ${lastSoldTicket.passenger_ci}\n` +
-      `*Asiento:* #${lastSoldTicket.seat_number}\n` +
-      `*Ruta:* ${lastSoldTicket.origin} ➔ ${lastSoldTicket.destination}\n` +
-      `*Fecha/Hora:* ${lastSoldTicket.trip_date} ${lastSoldTicket.departure_time?.substring(0, 5)}\n` +
-      `*Monto:* Bs. ${parseFloat(lastSoldTicket.price_paid).toFixed(2)}\n` +
-      `*Vehículo:* ${lastSoldTicket.plate}\n` +
-      `*Chofer:* ${lastSoldTicket.driver}\n\n` +
-      `*Verificar Boleto:* https://sindicatotrans.com/ticket/${lastSoldTicket.id}`;
-    showToast('Enlace de WhatsApp generado', 'info');
+  const compartirWhatsApp = () => {
+    if (!ultimoBoletoVendido) return;
+    const mensaje = `*SINDICATO TRANS — BOLETO DE VIAJE*\n\n` +
+      `*Boleto ID:* #${ultimoBoletoVendido.id}\n` +
+      `*Pasajero:* ${ultimoBoletoVendido.nombre_pasajero}\n` +
+      `*C.I.:* ${ultimoBoletoVendido.ci_pasajero}\n` +
+      `*Asiento:* #${ultimoBoletoVendido.numero_asiento}\n` +
+      `*Ruta:* ${ultimoBoletoVendido.origen} ➔ ${ultimoBoletoVendido.destino}\n` +
+      `*Fecha/Hora:* ${ultimoBoletoVendido.fecha_viaje} ${ultimoBoletoVendido.hora_salida?.substring(0, 5)}\n` +
+      `*Monto:* Bs. ${parseFloat(ultimoBoletoVendido.precio_pagado).toFixed(2)}\n` +
+      `*Vehículo:* ${ultimoBoletoVendido.placa}\n` +
+      `*Chofer:* ${ultimoBoletoVendido.chofer}\n\n` +
+      `*Verificar Boleto:* https://sindicatotrans.com/boleto/${ultimoBoletoVendido.id}`;
+    mostrarToast('Enlace de WhatsApp generado', 'info');
   };
 
-  const handleSeatPress = (seatNumber: number, status: string) => {
-    if (status !== 'free') {
+  const manejarSeleccionAsiento = (numeroAsiento: number, estado: string) => {
+    if (estado !== 'libre') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast(`El asiento ${seatNumber} no está disponible`, 'warning');
+      mostrarToast(`El asiento ${numeroAsiento} no está disponible`, 'warning');
       return;
     }
-    setSelectedSeat(seatNumber);
+    setAsientoSeleccionado(numeroAsiento);
   };
 
-  const handlePurchase = async () => {
-    if (!selectedSeat || !passengerName || !passengerCI || !selectedTripId) {
+  const manejarCompraBoleto = async () => {
+    if (!asientoSeleccionado || !nombrePasajero || !ciPasajero || !viajeSeleccionadoId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      showToast('Complete todos los campos de pasajero y asiento', 'warning');
+      mostrarToast('Complete todos los campos de pasajero y asiento', 'warning');
       return;
     }
 
     try {
-      setLoading(true);
-      const trip = tripsList.find(t => t.id.toString() === selectedTripId);
-      const selectedCorp = isCorporate ? corporateAccountsList.find(c => c.id.toString() === selectedCorpId) : null;
+      setCargando(true);
+      const viaje = listaViajes.find(t => t.id.toString() === viajeSeleccionadoId);
+      const empresaCorp = esCorporativo ? listaCuentasCorp.find(c => c.id.toString() === corpSeleccionadaId) : null;
 
-      const ticketInsert = {
-        trip_id: parseInt(selectedTripId),
-        seat_number: selectedSeat,
-        passenger_name: passengerName,
-        passenger_ci: passengerCI,
-        dest_segment_id: selectedDestId ? parseInt(selectedDestId) : null,
-        price_paid: ticketPrice,
-        status: 'ACTIVE',
-        sold_by: currentUser?.id
+      const boletoInsertar = {
+        viaje_id: parseInt(viajeSeleccionadoId),
+        numero_asiento: asientoSeleccionado,
+        nombre_pasajero: nombrePasajero,
+        ci_pasajero: ciPasajero,
+        tramo_destino_id: destinoSeleccionadoId ? parseInt(destinoSeleccionadoId) : null,
+        precio_pagado: precioBoleto,
+        estado: 'ACTIVO',
+        vendido_por: usuarioActual?.id
       };
 
       const { data, error } = await supabase
-        .from('tickets')
-        .insert(ticketInsert)
+        .from('boletos')
+        .insert(boletoInsertar)
         .select()
         .single();
 
       if (error) throw error;
 
-      await supabase.from('finances').insert({
-        trip_id: parseInt(selectedTripId),
-        user_id: currentUser?.id,
-        concept: isCorporate
-          ? `Boleto Asiento ${selectedSeat} (${passengerName}) - Convenio: ${selectedCorp?.company_name}`
-          : `Venta boleto - Asiento ${selectedSeat} (${passengerName})`,
-        amount: ticketPrice,
-        type: 'INCOME'
+      await supabase.from('finanzas').insert({
+        viaje_id: parseInt(viajeSeleccionadoId),
+        usuario_id: usuarioActual?.id,
+        concepto: esCorporativo
+          ? `Boleto Asiento ${asientoSeleccionado} (${nombrePasajero}) - Convenio: ${empresaCorp?.nombre_empresa}`
+          : `Venta boleto - Asiento ${asientoSeleccionado} (${nombrePasajero})`,
+        monto: precioBoleto,
+        tipo: 'INGRESO'
       });
 
-      setLastSoldTicket({
+      setUltimoBoletoVendido({
         id: data.id,
-        seat_number: selectedSeat,
-        passenger_name: passengerName,
-        passenger_ci: passengerCI,
-        origin: 'Uyuni',
-        destination: endSegment,
-        price_paid: ticketPrice,
-        trip_date: trip ? trip.trip_date : 'Hoy',
-        departure_time: trip ? trip.departure_time : '14:00',
-        plate: trip?.vehicle?.plate || '2314-HBG',
-        driver: trip?.driver?.full_name || 'Marcos Ruiz'
+        numero_asiento: asientoSeleccionado,
+        nombre_pasajero: nombrePasajero,
+        ci_pasajero: ciPasajero,
+        origen: 'Uyuni',
+        destino: tramoDestino,
+        precio_pagado: precioBoleto,
+        fecha_viaje: viaje ? viaje.fecha_viaje : 'Hoy',
+        hora_salida: viaje ? viaje.hora_salida : '14:00',
+        placa: viaje?.vehiculo?.placa || '2314-HBG',
+        chofer: viaje?.chofer?.nombre_completo || 'Marcos Ruiz'
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowReceiptModal(true);
-      setSelectedSeat(null);
-      setPassengerName('');
-      setPassengerCI('');
-      fetchTripDetails();
+      setMostrarReciboModal(true);
+      setAsientoSeleccionado(null);
+      setNombrePasajero('');
+      setCiPasajero('');
+      obtenerDetallesViaje();
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast('Error vendiendo pasaje: ' + e.message, 'error');
+      mostrarToast('Error vendiendo pasaje: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleRegisterParcel = async () => {
-    if (!senderName || !receiverName || !parcelDesc || !parcelPrice || !selectedTripId) {
-      showToast('Complete los datos de la encomienda', 'warning');
+  const registrarEncomienda = async () => {
+    if (!nombreRemitente || !nombreDestinatario || !descripcionEncomienda || !precioEncomienda || !viajeSeleccionadoId) {
+      mostrarToast('Complete los datos de la encomienda', 'warning');
       return;
     }
 
     try {
-      setLoading(true);
-      const uniqueSuffix = Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
-      const randomQR = `QR-${uniqueSuffix}`;
+      setCargando(true);
+      const sufijoUnico = Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+      const codigoQRGenerado = `QR-${sufijoUnico}`;
 
-      const { error } = await supabase.from('parcels').insert({
-        trip_id: parseInt(selectedTripId),
-        sender_name: senderName, sender_ci: senderCI, sender_phone: senderPhone,
-        receiver_name: receiverName, receiver_ci: receiverCI, receiver_phone: receiverPhone,
-        description: parcelDesc, weight_kg: parcelWeight ? parseFloat(parcelWeight) : 0,
-        price: parseFloat(parcelPrice), status: 'PENDING', qr_code: randomQR, registered_by: currentUser?.id
+      const { error } = await supabase.from('encomiendas').insert({
+        viaje_id: parseInt(viajeSeleccionadoId),
+        nombre_remitente: nombreRemitente, ci_remitente: ciRemitente, telefono_remitente: telefonoRemitente,
+        nombre_destinatario: nombreDestinatario, ci_destinatario: ciDestinatario, telefono_destinatario: telefonoDestinatario,
+        descripcion: descripcionEncomienda, peso_kg: pesoEncomienda ? parseFloat(pesoEncomienda) : 0,
+        precio: parseFloat(precioEncomienda), estado: 'PENDIENTE', codigo_qr: codigoQRGenerado, registrado_por: usuarioActual?.id
       });
 
       if (error) throw error;
 
-      await supabase.from('finances').insert({
-        trip_id: parseInt(selectedTripId), user_id: currentUser?.id,
-        concept: `Envío encomienda - De ${senderName} para ${receiverName}`,
-        amount: parseFloat(parcelPrice), type: 'INCOME'
+      await supabase.from('finanzas').insert({
+        viaje_id: parseInt(viajeSeleccionadoId), usuario_id: usuarioActual?.id,
+        concepto: `Envío encomienda - De ${nombreRemitente} para ${nombreDestinatario}`,
+        monto: parseFloat(precioEncomienda), tipo: 'INGRESO'
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast(`Encomienda registrada — QR: ${randomQR}`, 'success');
-      setSenderName(''); setSenderCI(''); setSenderPhone('');
-      setReceiverName(''); setReceiverCI(''); setReceiverPhone('');
-      setParcelDesc(''); setParcelWeight(''); setParcelPrice('');
-      fetchTripDetails();
+      mostrarToast(`Encomienda registrada — QR: ${codigoQRGenerado}`, 'success');
+      setNombreRemitente(''); setCiRemitente(''); setTelefonoRemitente('');
+      setNombreDestinatario(''); setCiDestinatario(''); setTelefonoDestinatario('');
+      setDescripcionEncomienda(''); setPesoEncomienda(''); setPrecioEncomienda('');
+      obtenerDetallesViaje();
     } catch (e: any) {
-      showToast('Error al registrar encomienda: ' + e.message, 'error');
+      mostrarToast('Error al registrar encomienda: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleRegisterExpense = async () => {
-    if (!expenseConcept || !expenseAmount) {
-      showToast('Ingrese concepto y monto del gasto', 'warning');
+  const registrarEgreso = async () => {
+    if (!conceptoGasto || !montoGasto) {
+      mostrarToast('Ingrese concepto y monto del gasto', 'warning');
       return;
     }
     try {
-      setLoading(true);
-      const { error } = await supabase.from('finances').insert({
-        trip_id: selectedTripId ? parseInt(selectedTripId) : null,
-        user_id: currentUser?.id,
-        concept: `Gasto Oficina: ${expenseConcept}`,
-        amount: parseFloat(expenseAmount),
-        type: 'EXPENSE'
+      setCargando(true);
+      const { error } = await supabase.from('finanzas').insert({
+        viaje_id: viajeSeleccionadoId ? parseInt(viajeSeleccionadoId) : null,
+        usuario_id: usuarioActual?.id,
+        concepto: `Gasto Oficina: ${conceptoGasto}`,
+        monto: parseFloat(montoGasto),
+        tipo: 'EGRESO'
       });
       if (error) throw error;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Gasto registrado correctamente', 'success');
-      setExpenseConcept('');
-      setExpenseAmount('');
-      fetchTripDetails();
+      mostrarToast('Gasto registrado correctamente', 'success');
+      setConceptoGasto('');
+      setMontoGasto('');
+      obtenerDetallesViaje();
     } catch (e: any) {
-      showToast('Error al registrar gasto: ' + e.message, 'error');
+      mostrarToast('Error al registrar gasto: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleCancelTicket = async (ticketId: number, pricePaid: number) => {
+  const anularBoleto = async (boletoId: number, precioPagado: number) => {
     try {
-      setLoading(true);
-      const { error } = await supabase.from('tickets').update({ status: 'CANCELLED' }).eq('id', ticketId);
+      setCargando(true);
+      const { error } = await supabase.from('boletos').update({ estado: 'CANCELADO' }).eq('id', boletoId);
       if (error) throw error;
-      await supabase.from('finances').insert({
-        trip_id: selectedTripId ? parseInt(selectedTripId) : null,
-        user_id: currentUser?.id,
-        concept: `Anulación de boleto #${ticketId}`,
-        amount: pricePaid, type: 'EXPENSE'
+      await supabase.from('finanzas').insert({
+        viaje_id: viajeSeleccionadoId ? parseInt(viajeSeleccionadoId) : null,
+        usuario_id: usuarioActual?.id,
+        concepto: `Anulación de boleto #${boletoId}`,
+        monto: precioPagado, tipo: 'EGRESO'
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Boleto anulado y reembolsado', 'info');
-      fetchTripDetails();
+      mostrarToast('Boleto anulado y reembolsado', 'info');
+      obtenerDetallesViaje();
     } catch (e: any) {
-      showToast('Error anulando boleto: ' + e.message, 'error');
+      mostrarToast('Error anulando boleto: ' + e.message, 'error');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchTripDetails();
-    setRefreshing(false);
+  const manejarRefresco = async () => {
+    setRefrescando(true);
+    await obtenerDetallesViaje();
+    setRefrescando(false);
   };
 
-  const seatStatusData: Record<number, string> = {};
-  occupiedSeats.forEach(seat => { seatStatusData[seat] = 'occupied'; });
-  if (selectedSeat) { seatStatusData[selectedSeat] = 'reserved'; }
+  const datosAsientoEstado: Record<number, string> = {};
+  asientosOcupados.forEach(asiento => { datosAsientoEstado[asiento] = 'ocupado'; });
+  if (asientoSeleccionado) { datosAsientoEstado[asientoSeleccionado] = 'seleccionado'; }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Toast visible={toastVisible} message={toastMessage} type={toastType} onDismiss={() => setToastVisible(false)} />
+    <SafeAreaView style={estilos.contenedor}>
+      <Toast visible={toastVisible} message={toastMensaje} type={toastTipo} onDismiss={() => setToastVisible(false)} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={estilos.header}>
         <View>
-          <Text style={styles.headerTitle}>Boletería</Text>
-          <Text style={styles.headerSubtitle}>
-            {currentUser ? currentUser.full_name : 'Operador'}
+          <Text style={estilos.tituloHeader}>Boletería</Text>
+          <Text style={estilos.subtituloHeader}>
+            {usuarioActual ? usuarioActual.nombre_completo : 'Operador'}
           </Text>
         </View>
-        <View style={styles.headerActions}>
-          <AnimatedPressable style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
+        <View style={estilos.accionesHeader}>
+          <AnimatedPressable style={estilos.botonIcono} onPress={() => navigation.navigate('Chat')}>
             <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
           </AnimatedPressable>
-          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
+          <AnimatedPressable style={estilos.botonIcono} onPress={manejarCierreSesion}>
             <Ionicons name="arrow-forward-circle-outline" size={22} color={colors.danger} />
           </AnimatedPressable>
         </View>
       </View>
 
       {/* Segmented Control */}
-      <View style={styles.segmentedWrapper}>
+      <View style={estilos.envolturaSegmented}>
         <SegmentedControl
-          segments={tabNames}
-          selectedIndex={activeTabIndex}
-          onChange={setActiveTabIndex}
+          segments={nombresPestanas}
+          selectedIndex={indicePestanaActiva}
+          onChange={setIndicePestanaActiva}
         />
       </View>
 
-      {loading && !refreshing ? (
+      {cargando && !refrescando ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Procesando...</Text>
+          <Text style={estilos.textoCargando}>Procesando...</Text>
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          contentContainerStyle={estilos.contenidoScroll}
+          refreshControl={<RefreshControl refreshing={refrescando} onRefresh={manejarRefresco} tintColor={colors.primary} />}
         >
           {/* SELECCIONAR VIAJE ACTIVO */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Viaje Activo</Text>
-            {tripsList.length === 0 ? (
-              <Text style={styles.emptyText}>No hay viajes programados</Text>
+          <View style={estilos.tarjeta}>
+            <Text style={estilos.etiquetaTarjeta}>Viaje Activo</Text>
+            {listaViajes.length === 0 ? (
+              <Text style={estilos.textoVacio}>No hay viajes programados</Text>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
-                {tripsList.map((trip) => (
+                {listaViajes.map((viaje) => (
                   <AnimatedPressable
-                    key={trip.id}
-                    style={[styles.chipButton, selectedTripId == trip.id.toString() && styles.chipButtonActive]}
-                    onPress={() => setSelectedTripId(trip.id.toString())}
+                    key={viaje.id}
+                    style={[estilos.botonChip, viajeSeleccionadoId == viaje.id.toString() && estilos.botonChipActivo]}
+                    onPress={() => setViajeSeleccionadoId(viaje.id.toString())}
                   >
-                    <Text style={[styles.chipText, selectedTripId == trip.id.toString() && styles.chipTextActive]}>
-                      {trip.route?.name} ({trip.departure_time?.substring(0, 5)})
+                    <Text style={[estilos.textoChip, viajeSeleccionadoId == viaje.id.toString() && estilos.textoChipActivo]}>
+                      {viaje.ruta?.nombre} ({viaje.hora_salida?.substring(0, 5)})
                     </Text>
                   </AnimatedPressable>
                 ))}
@@ -521,66 +521,66 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
           </View>
 
           {/* TAB 1: PASAJES */}
-          {activeTabIndex === 0 && (
-            <View style={styles.tabContent}>
-              <SeatMap seatsData={seatStatusData} onSeatPress={handleSeatPress} />
+          {indicePestanaActiva === 0 && (
+            <View style={estilos.contenidoPestana}>
+              <SeatMap datosAsientos={datosAsientoEstado} alPresionarAsiento={manejarSeleccionAsiento} />
 
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Detalles del Pasaje</Text>
+              <View style={estilos.tarjeta}>
+                <Text style={estilos.tituloTarjeta}>Detalles del Pasaje</Text>
 
                 {/* Asiento seleccionado */}
-                <View style={styles.seatBadgeRow}>
-                  <Text style={styles.fieldLabel}>Asiento</Text>
-                  <View style={[styles.seatBadge, !selectedSeat && { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.seatBadgeText, !selectedSeat && { color: colors.textSecondary }]}>
-                      {selectedSeat ? `#${selectedSeat}` : '—'}
+                <View style={estilos.filaInsigniaAsiento}>
+                  <Text style={estilos.etiquetaCampo}>Asiento</Text>
+                  <View style={[estilos.insigniaAsiento, !asientoSeleccionado && { backgroundColor: colors.surface }]}>
+                    <Text style={[estilos.textoInsigniaAsiento, !asientoSeleccionado && { color: colors.textSecondary }]}>
+                      {asientoSeleccionado ? `#${asientoSeleccionado}` : '—'}
                     </Text>
                   </View>
                 </View>
 
                 {/* Tramo de destino */}
-                <Text style={styles.fieldLabel}>Destino</Text>
+                <Text style={estilos.etiquetaCampo}>Destino</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                  {segmentsList.map((seg) => (
+                  {listaTramos.map((tramo) => (
                     <AnimatedPressable
-                      key={seg.id}
-                      style={[styles.chipButton, selectedDestId == seg.id.toString() && styles.chipButtonActive]}
-                      onPress={() => { setSelectedDestId(seg.id.toString()); setEndSegment(seg.destination); setTicketPrice(parseFloat(seg.price.toString())); }}
+                      key={tramo.id}
+                      style={[estilos.botonChip, destinoSeleccionadoId == tramo.id.toString() && estilos.botonChipActivo]}
+                      onPress={() => { setDestinoSeleccionadoId(tramo.id.toString()); setTramoDestino(tramo.destino); setPrecioBoleto(parseFloat(tramo.precio.toString())); }}
                     >
-                      <Text style={[styles.chipText, selectedDestId == seg.id.toString() && styles.chipTextActive]}>
-                        {seg.destination} — Bs. {seg.price}
+                      <Text style={[estilos.textoChip, destinoSeleccionadoId == tramo.id.toString() && estilos.textoChipActivo]}>
+                        {tramo.destino} — Bs. {tramo.precio}
                       </Text>
                     </AnimatedPressable>
                   ))}
                 </ScrollView>
 
                 {/* Tipo de pago */}
-                <Text style={styles.fieldLabel}>Tipo de Pago</Text>
-                <View style={styles.paymentRow}>
+                <Text style={estilos.etiquetaCampo}>Tipo de Pago</Text>
+                <View style={estilos.filaPago}>
                   <AnimatedPressable
-                    style={[styles.chipButton, !isCorporate && styles.chipButtonActive]}
-                    onPress={() => setIsCorporate(false)}
+                    style={[estilos.botonChip, !esCorporativo && estilos.botonChipActivo]}
+                    onPress={() => setEsCorporativo(false)}
                   >
-                    <Text style={[styles.chipText, !isCorporate && styles.chipTextActive]}>Efectivo</Text>
+                    <Text style={[estilos.textoChip, !esCorporativo && estilos.textoChipActivo]}>Efectivo</Text>
                   </AnimatedPressable>
                   <AnimatedPressable
-                    style={[styles.chipButton, isCorporate && styles.chipButtonActive]}
-                    onPress={() => setIsCorporate(true)}
+                    style={[estilos.botonChip, esCorporativo && estilos.botonChipActivo]}
+                    onPress={() => setEsCorporativo(true)}
                   >
-                    <Text style={[styles.chipText, isCorporate && styles.chipTextActive]}>Convenio</Text>
+                    <Text style={[estilos.textoChip, esCorporativo && estilos.textoChipActivo]}>Convenio</Text>
                   </AnimatedPressable>
                 </View>
 
-                {isCorporate && (
+                {esCorporativo && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                    {corporateAccountsList.map((corp) => (
+                    {listaCuentasCorp.map((corp) => (
                       <AnimatedPressable
                         key={corp.id}
-                        style={[styles.chipButton, selectedCorpId == corp.id.toString() && styles.chipButtonActive]}
-                        onPress={() => setSelectedCorpId(corp.id.toString())}
+                        style={[estilos.botonChip, corpSeleccionadaId == corp.id.toString() && estilos.botonChipActivo]}
+                        onPress={() => setCorpSeleccionadaId(corp.id.toString())}
                       >
-                        <Text style={[styles.chipText, selectedCorpId == corp.id.toString() && styles.chipTextActive]}>
-                          {corp.company_name}
+                        <Text style={[estilos.textoChip, corpSeleccionadaId == corp.id.toString() && estilos.textoChipActivo]}>
+                          {corp.nombre_empresa}
                         </Text>
                       </AnimatedPressable>
                     ))}
@@ -588,96 +588,96 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
                 )}
 
                 {/* Campos de pasajero */}
-                <Text style={styles.fieldLabel}>C.I. / Documento</Text>
-                <TextInput style={styles.input} placeholder="Ej. 1234567-LP" placeholderTextColor={colors.textTertiary}
-                  value={passengerCI} onChangeText={setPassengerCI} autoCapitalize="characters" />
+                <Text style={estilos.etiquetaCampo}>C.I. / Documento</Text>
+                <TextInput style={estilos.input} placeholder="Ej. 1234567-LP" placeholderTextColor={colors.textTertiary}
+                  value={ciPasajero} onChangeText={setCiPasajero} autoCapitalize="characters" />
 
-                <Text style={styles.fieldLabel}>Nombre del Pasajero</Text>
-                <TextInput style={styles.input} placeholder="Nombre Completo" placeholderTextColor={colors.textTertiary}
-                  value={passengerName} onChangeText={setPassengerName} />
+                <Text style={estilos.etiquetaCampo}>Nombre del Pasajero</Text>
+                <TextInput style={estilos.input} placeholder="Nombre Completo" placeholderTextColor={colors.textTertiary}
+                  value={nombrePasajero} onChangeText={setNombrePasajero} />
 
                 {/* Precio */}
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Total</Text>
-                  <Text style={styles.priceValue}>Bs. {ticketPrice.toFixed(2)}</Text>
+                <View style={estilos.filaPrecio}>
+                  <Text style={estilos.etiquetaPrecio}>Total</Text>
+                  <Text style={estilos.valorPrecio}>Bs. {precioBoleto.toFixed(2)}</Text>
                 </View>
 
                 {/* Botón emitir */}
                 <AnimatedPressable
-                  style={[styles.primaryButton, !selectedSeat && styles.buttonDisabled]}
-                  disabled={!selectedSeat}
-                  onPress={handlePurchase}
+                  style={[estilos.botonPrincipal, !asientoSeleccionado && estilos.botonDeshabilitado]}
+                  disabled={!asientoSeleccionado}
+                  onPress={manejarCompraBoleto}
                 >
                   <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>Emitir Boleto</Text>
+                  <Text style={estilos.textoBotonPrincipal}>Emitir Boleto</Text>
                 </AnimatedPressable>
               </View>
             </View>
           )}
 
           {/* TAB 2: ENCOMIENDAS */}
-          {activeTabIndex === 1 && (
-            <View style={styles.tabContent}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Nueva Encomienda</Text>
+          {indicePestanaActiva === 1 && (
+            <View style={estilos.contenidoPestana}>
+              <View style={estilos.tarjeta}>
+                <Text style={estilos.tituloTarjeta}>Nueva Encomienda</Text>
 
-                <Text style={styles.sectionLabel}>Remitente</Text>
-                <TextInput style={styles.input} placeholder="Nombre" placeholderTextColor={colors.textTertiary}
-                  value={senderName} onChangeText={setSenderName} />
-                <View style={styles.inputRow}>
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="C.I." placeholderTextColor={colors.textTertiary}
-                    value={senderCI} onChangeText={setSenderCI} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Teléfono" placeholderTextColor={colors.textTertiary}
-                    value={senderPhone} onChangeText={setSenderPhone} keyboardType="phone-pad" />
+                <Text style={estilos.etiquetaSeccion}>Remitente</Text>
+                <TextInput style={estilos.input} placeholder="Nombre" placeholderTextColor={colors.textTertiary}
+                  value={nombreRemitente} onChangeText={setNombreRemitente} />
+                <View style={estilos.filaInput}>
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="C.I." placeholderTextColor={colors.textTertiary}
+                    value={ciRemitente} onChangeText={setCiRemitente} />
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="Teléfono" placeholderTextColor={colors.textTertiary}
+                    value={telefonoRemitente} onChangeText={setTelefonoRemitente} keyboardType="phone-pad" />
                 </View>
 
-                <Text style={styles.sectionLabel}>Destinatario</Text>
-                <TextInput style={styles.input} placeholder="Nombre" placeholderTextColor={colors.textTertiary}
-                  value={receiverName} onChangeText={setReceiverName} />
-                <View style={styles.inputRow}>
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="C.I." placeholderTextColor={colors.textTertiary}
-                    value={receiverCI} onChangeText={setReceiverCI} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Teléfono" placeholderTextColor={colors.textTertiary}
-                    value={receiverPhone} onChangeText={setReceiverPhone} keyboardType="phone-pad" />
+                <Text style={estilos.etiquetaSeccion}>Destinatario</Text>
+                <TextInput style={estilos.input} placeholder="Nombre" placeholderTextColor={colors.textTertiary}
+                  value={nombreDestinatario} onChangeText={setNombreDestinatario} />
+                <View style={estilos.filaInput}>
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="C.I." placeholderTextColor={colors.textTertiary}
+                    value={ciDestinatario} onChangeText={setCiDestinatario} />
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="Teléfono" placeholderTextColor={colors.textTertiary}
+                    value={telefonoDestinatario} onChangeText={setTelefonoDestinatario} keyboardType="phone-pad" />
                 </View>
 
-                <Text style={styles.sectionLabel}>Detalle del Envío</Text>
-                <TextInput style={styles.input} placeholder="Descripción (ej. Caja de repuestos)" placeholderTextColor={colors.textTertiary}
-                  value={parcelDesc} onChangeText={setParcelDesc} />
-                <View style={styles.inputRow}>
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Peso (Kg)" placeholderTextColor={colors.textTertiary}
-                    value={parcelWeight} onChangeText={setParcelWeight} keyboardType="numeric" />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Costo (Bs.)" placeholderTextColor={colors.textTertiary}
-                    value={parcelPrice} onChangeText={setParcelPrice} keyboardType="numeric" />
+                <Text style={estilos.etiquetaSeccion}>Detalle del Envío</Text>
+                <TextInput style={estilos.input} placeholder="Descripción (ej. Caja de repuestos)" placeholderTextColor={colors.textTertiary}
+                  value={descripcionEncomienda} onChangeText={setDescripcionEncomienda} />
+                <View style={estilos.filaInput}>
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="Peso (Kg)" placeholderTextColor={colors.textTertiary}
+                    value={pesoEncomienda} onChangeText={setPesoEncomienda} keyboardType="numeric" />
+                  <TextInput style={[estilos.input, { flex: 1 }]} placeholder="Costo (Bs.)" placeholderTextColor={colors.textTertiary}
+                    value={precioEncomienda} onChangeText={setPrecioEncomienda} keyboardType="numeric" />
                 </View>
 
-                <AnimatedPressable style={styles.primaryButton} onPress={handleRegisterParcel}>
+                <AnimatedPressable style={estilos.botonPrincipal} onPress={registrarEncomienda}>
                   <Ionicons name="cube" size={20} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>Registrar Encomienda</Text>
+                  <Text style={estilos.textoBotonPrincipal}>Registrar Encomienda</Text>
                 </AnimatedPressable>
               </View>
 
               {/* Lista de encomiendas */}
-              <Text style={styles.listTitle}>Encomiendas del Viaje ({parcelsList.length})</Text>
-              {parcelsList.length === 0 ? (
-                <View style={styles.emptyCard}><Text style={styles.emptyText}>Sin encomiendas en este viaje</Text></View>
+              <Text style={estilos.tituloLista}>Encomiendas del Viaje ({listaEncomiendas.length})</Text>
+              {listaEncomiendas.length === 0 ? (
+                <View style={estilos.tarjetaVacia}><Text style={estilos.textoVacio}>Sin encomiendas en este viaje</Text></View>
               ) : (
-                parcelsList.map(parcel => (
-                  <View key={parcel.id} style={styles.listCard}>
+                listaEncomiendas.map(encomienda => (
+                  <View key={encomienda.id} style={estilos.tarjetaLista}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.listCardTitle}>{parcel.description}</Text>
-                      <Text style={styles.listCardSub}>De: {parcel.sender_name} → {parcel.receiver_name}</Text>
-                      <Text style={styles.listCardSub}>{parcel.weight_kg} Kg · Bs. {parseFloat(parcel.price).toFixed(2)} · {parcel.qr_code}</Text>
+                      <Text style={estilos.tituloTarjetaLista}>{encomienda.descripcion}</Text>
+                      <Text style={estilos.subtituloTarjetaLista}>De: {encomienda.nombre_remitente} → {encomienda.nombre_destinatario}</Text>
+                      <Text style={estilos.subtituloTarjetaLista}>{encomienda.peso_kg} Kg · Bs. {parseFloat(encomienda.precio).toFixed(2)} · {encomienda.codigo_qr}</Text>
                     </View>
-                    <View style={[styles.statusPill, {
-                      backgroundColor: parcel.status === 'DELIVERED' ? colors.tintSuccess :
-                        parcel.status === 'IN_TRANSIT' ? colors.tint : colors.tintWarning
+                    <View style={[estilos.pastillaEstado, {
+                      backgroundColor: encomienda.estado === 'ENTREGADO' ? colors.tintSuccess :
+                        encomienda.estado === 'EN_RUTA' ? colors.tint : colors.tintWarning
                     }]}>
-                      <Text style={[styles.statusPillText, {
-                        color: parcel.status === 'DELIVERED' ? colors.success :
-                          parcel.status === 'IN_TRANSIT' ? colors.primary : colors.warning
+                      <Text style={[estilos.textoPastillaEstado, {
+                        color: encomienda.estado === 'ENTREGADO' ? colors.success :
+                          encomienda.estado === 'EN_RUTA' ? colors.primary : colors.warning
                       }]}>
-                        {parcel.status === 'PENDING' ? 'Pendiente' : parcel.status === 'IN_TRANSIT' ? 'En Ruta' : 'Entregado'}
+                        {encomienda.estado === 'PENDIENTE' ? 'Pendiente' : encomienda.estado === 'EN_RUTA' ? 'En Ruta' : 'Entregado'}
                       </Text>
                     </View>
                   </View>
@@ -687,25 +687,25 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
           )}
 
           {/* TAB 3: SALIDAS (KANBAN) */}
-          {activeTabIndex === 2 && (
-            <View style={styles.tabContent}>
-              <Text style={styles.listTitle}>Control de Despacho</Text>
+          {indicePestanaActiva === 2 && (
+            <View style={estilos.contenidoPestana}>
+              <Text style={estilos.tituloLista}>Control de Despacho</Text>
 
               {/* Programados */}
-              <View style={styles.kanbanSection}>
-                <View style={[styles.kanbanHeader, { borderLeftColor: colors.primary }]}>
-                  <Text style={styles.kanbanHeaderText}>📅 Programados</Text>
+              <View style={estilos.seccionKanban}>
+                <View style={[estilos.cabeceraKanban, { borderLeftColor: colors.primary }]}>
+                  <Text style={estilos.textoCabeceraKanban}>📅 Programados</Text>
                 </View>
-                {tripsList.filter(t => t.status === 'SCHEDULED').length === 0 ? (
-                  <Text style={styles.kanbanEmpty}>Sin viajes programados</Text>
+                {listaViajes.filter(t => t.estado === 'PROGRAMADO').length === 0 ? (
+                  <Text style={estilos.textoVacioKanban}>Sin viajes programados</Text>
                 ) : (
-                  tripsList.filter(t => t.status === 'SCHEDULED').map(trip => (
-                    <View key={trip.id} style={styles.kanbanCard}>
-                      <Text style={styles.kanbanCardTitle}>{trip.route?.name}</Text>
-                      <Text style={styles.kanbanCardSub}>Salida: {trip.departure_time?.substring(0, 5)} · {trip.vehicle?.plate} · {trip.driver?.full_name}</Text>
-                      <AnimatedPressable style={[styles.kanbanBtn, { backgroundColor: colors.primary }]}
-                        onPress={async () => { setLoading(true); await supabase.from('trips').update({ status: 'BOARDING' }).eq('id', trip.id); showToast('Minibús en abordaje', 'info'); loadInitialData(); }}>
-                        <Text style={styles.kanbanBtnText}>Iniciar Abordaje</Text>
+                  listaViajes.filter(t => t.estado === 'PROGRAMADO').map(viaje => (
+                    <View key={viaje.id} style={estilos.tarjetaKanban}>
+                      <Text style={estilos.tituloTarjetaKanban}>{viaje.ruta?.nombre}</Text>
+                      <Text style={estilos.subtituloTarjetaKanban}>Salida: {viaje.hora_salida?.substring(0, 5)} · {viaje.vehiculo?.placa} · {viaje.chofer?.nombre_completo}</Text>
+                      <AnimatedPressable style={[estilos.botonKanban, { backgroundColor: colors.primary }]}
+                        onPress={async () => { setCargando(true); await supabase.from('viajes').update({ estado: 'ABORDANDO' }).eq('id', viaje.id); mostrarToast('Minibús en abordaje', 'info'); cargarDatosIniciales(); }}>
+                        <Text style={estilos.textoBotonKanban}>Iniciar Abordaje</Text>
                       </AnimatedPressable>
                     </View>
                   ))
@@ -713,29 +713,29 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
               </View>
 
               {/* Abordando */}
-              <View style={styles.kanbanSection}>
-                <View style={[styles.kanbanHeader, { borderLeftColor: colors.warning }]}>
-                  <Text style={styles.kanbanHeaderText}>🚪 Abordando</Text>
+              <View style={estilos.seccionKanban}>
+                <View style={[estilos.cabeceraKanban, { borderLeftColor: colors.warning }]}>
+                  <Text style={estilos.textoCabeceraKanban}>🚪 Abordando</Text>
                 </View>
-                {tripsList.filter(t => t.status === 'BOARDING').length === 0 ? (
-                  <Text style={styles.kanbanEmpty}>Sin viajes en abordaje</Text>
+                {listaViajes.filter(t => t.estado === 'ABORDANDO').length === 0 ? (
+                  <Text style={estilos.textoVacioKanban}>Sin viajes en abordaje</Text>
                 ) : (
-                  tripsList.filter(t => t.status === 'BOARDING').map(trip => (
-                    <View key={trip.id} style={styles.kanbanCard}>
-                      <Text style={styles.kanbanCardTitle}>{trip.route?.name}</Text>
-                      <Text style={styles.kanbanCardSub}>Salida: {trip.departure_time?.substring(0, 5)} · {trip.vehicle?.plate} · {trip.driver?.full_name}</Text>
-                      <AnimatedPressable style={[styles.kanbanBtn, { backgroundColor: colors.success }]}
+                  listaViajes.filter(t => t.estado === 'ABORDANDO').map(viaje => (
+                    <View key={viaje.id} style={estilos.tarjetaKanban}>
+                      <Text style={estilos.tituloTarjetaKanban}>{viaje.ruta?.nombre}</Text>
+                      <Text style={estilos.subtituloTarjetaKanban}>Salida: {viaje.hora_salida?.substring(0, 5)} · {viaje.vehiculo?.placa} · {viaje.chofer?.nombre_completo}</Text>
+                      <AnimatedPressable style={[estilos.botonKanban, { backgroundColor: colors.success }]}
                         onPress={async () => {
-                          setLoading(true);
-                          await supabase.from('trips').update({ status: 'IN_PROGRESS' }).eq('id', trip.id);
-                          await supabase.from('events').insert({
-                            trip_id: trip.id, driver_id: trip.driver_id, event_type: 'DEPARTURE_MARK',
-                            payload: { location: trip.route?.origin, time: new Date().toISOString() }
+                          setCargando(true);
+                          await supabase.from('viajes').update({ estado: 'EN_RUTA' }).eq('id', viaje.id);
+                          await supabase.from('eventos').insert({
+                            viaje_id: viaje.id, chofer_id: viaje.chofer_id, tipo_evento: 'MARCA_SALIDA',
+                            datos: { ubicacion: viaje.ruta?.origen, hora: new Date().toISOString() }
                           });
-                          showToast('Minibús despachado a ruta', 'success');
-                          loadInitialData();
+                          mostrarToast('Minibús despachado a ruta', 'success');
+                          cargarDatosIniciales();
                         }}>
-                        <Text style={styles.kanbanBtnText}>Despachar</Text>
+                        <Text style={estilos.textoBotonKanban}>Despachar</Text>
                       </AnimatedPressable>
                     </View>
                   ))
@@ -743,19 +743,19 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
               </View>
 
               {/* En Ruta */}
-              <View style={styles.kanbanSection}>
-                <View style={[styles.kanbanHeader, { borderLeftColor: colors.success }]}>
-                  <Text style={styles.kanbanHeaderText}>🟢 En Ruta</Text>
+              <View style={estilos.seccionKanban}>
+                <View style={[estilos.cabeceraKanban, { borderLeftColor: colors.success }]}>
+                  <Text style={estilos.textoCabeceraKanban}>🟢 En Ruta</Text>
                 </View>
-                {tripsList.filter(t => t.status === 'IN_PROGRESS').length === 0 ? (
-                  <Text style={styles.kanbanEmpty}>Sin viajes en ruta</Text>
+                {listaViajes.filter(t => t.estado === 'EN_RUTA').length === 0 ? (
+                  <Text style={estilos.textoVacioKanban}>Sin viajes en ruta</Text>
                 ) : (
-                  tripsList.filter(t => t.status === 'IN_PROGRESS').map(trip => (
-                    <View key={trip.id} style={styles.kanbanCard}>
-                      <Text style={styles.kanbanCardTitle}>{trip.route?.name}</Text>
-                      <Text style={styles.kanbanCardSub}>{trip.departure_time?.substring(0, 5)} · {trip.vehicle?.plate} · {trip.driver?.full_name}</Text>
-                      <View style={[styles.statusPill, { backgroundColor: colors.tintSuccess, alignSelf: 'flex-start', marginTop: 8 }]}>
-                        <Text style={[styles.statusPillText, { color: colors.success }]}>En viaje</Text>
+                  listaViajes.filter(t => t.estado === 'EN_RUTA').map(viaje => (
+                    <View key={viaje.id} style={estilos.tarjetaKanban}>
+                      <Text style={estilos.tituloTarjetaKanban}>{viaje.ruta?.nombre}</Text>
+                      <Text style={estilos.subtituloTarjetaKanban}>{viaje.hora_salida?.substring(0, 5)} · {viaje.vehiculo?.placa} · {viaje.chofer?.nombre_completo}</Text>
+                      <View style={[estilos.pastillaEstado, { backgroundColor: colors.tintSuccess, alignSelf: 'flex-start', marginTop: 8 }]}>
+                        <Text style={[estilos.textoPastillaEstado, { color: colors.success }]}>En viaje</Text>
                       </View>
                     </View>
                   ))
@@ -765,72 +765,72 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
           )}
 
           {/* TAB 4: CAJA */}
-          {activeTabIndex === 3 && (
-            <View style={styles.tabContent}>
+          {indicePestanaActiva === 3 && (
+            <View style={estilos.contenidoPestana}>
               {/* KPIs */}
-              <View style={styles.kpiRow}>
-                <View style={[styles.kpiCard, { borderLeftColor: colors.success }]}>
-                  <Text style={styles.kpiLabel}>Ingresos</Text>
-                  <Text style={[styles.kpiValue, { color: colors.success }]}>Bs. {officeIncomes.toFixed(2)}</Text>
+              <View style={estilos.filaKpi}>
+                <View style={[estilos.tarjetaKpi, { borderLeftColor: colors.success }]}>
+                  <Text style={estilos.etiquetaKpi}>Ingresos</Text>
+                  <Text style={[estilos.valorKpi, { color: colors.success }]}>Bs. {ingresosOficina.toFixed(2)}</Text>
                 </View>
-                <View style={[styles.kpiCard, { borderLeftColor: colors.danger }]}>
-                  <Text style={styles.kpiLabel}>Egresos</Text>
-                  <Text style={[styles.kpiValue, { color: colors.danger }]}>Bs. {officeExpenses.toFixed(2)}</Text>
+                <View style={[estilos.tarjetaKpi, { borderLeftColor: colors.danger }]}>
+                  <Text style={estilos.etiquetaKpi}>Egresos</Text>
+                  <Text style={[estilos.valorKpi, { color: colors.danger }]}>Bs. {egresosOficina.toFixed(2)}</Text>
                 </View>
               </View>
 
-              <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
-                <Text style={styles.kpiLabel}>Saldo Neto</Text>
-                <Text style={[styles.kpiValueLarge, { color: officeIncomes - officeExpenses >= 0 ? colors.primary : colors.danger }]}>
-                  Bs. {(officeIncomes - officeExpenses).toFixed(2)}
+              <View style={[estilos.tarjeta, { alignItems: 'center', paddingVertical: 24 }]}>
+                <Text style={estilos.etiquetaKpi}>Saldo Neto</Text>
+                <Text style={[estilos.valorKpiGrande, { color: ingresosOficina - egresosOficina >= 0 ? colors.primary : colors.danger }]}>
+                  Bs. {(ingresosOficina - egresosOficina).toFixed(2)}
                 </Text>
               </View>
 
-              {cashRegister && (
+              {cajaDiaria && (
                 <AnimatedPressable
-                  style={[styles.primaryButton, { backgroundColor: colors.danger }]}
+                  style={[estilos.botonPrincipal, { backgroundColor: colors.danger }]}
                   onPress={() => {
-                    const expected = parseFloat(cashRegister.initial_amount.toString()) + officeIncomes - officeExpenses;
-                    setFinalCashInput(expected.toFixed(2));
-                    setShowCashCloseModal(true);
+                    const esperado = parseFloat(cajaDiaria.monto_inicial.toString()) + ingresosOficina - egresosOficina;
+                    setMontoFinalCajaInput(esperado.toFixed(2));
+                    setMostrarModalCerrarCaja(true);
                   }}
                 >
                   <Ionicons name="lock-closed" size={20} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>Cerrar Caja</Text>
+                  <Text style={estilos.textoBotonPrincipal}>Cerrar Caja</Text>
                 </AnimatedPressable>
               )}
 
               {/* Registrar gasto */}
-              <View style={[styles.card, { marginTop: 16 }]}>
-                <Text style={styles.cardTitle}>Registrar Gasto</Text>
-                <TextInput style={styles.input} placeholder="Concepto (ej. Compra de hojas)" placeholderTextColor={colors.textTertiary}
-                  value={expenseConcept} onChangeText={setExpenseConcept} />
-                <TextInput style={styles.input} placeholder="Monto (Bs.)" placeholderTextColor={colors.textTertiary}
-                  value={expenseAmount} onChangeText={setExpenseAmount} keyboardType="numeric" />
-                <AnimatedPressable style={[styles.primaryButton, { backgroundColor: colors.danger }]} onPress={handleRegisterExpense}>
+              <View style={[estilos.tarjeta, { marginTop: 16 }]}>
+                <Text style={estilos.tituloTarjeta}>Registrar Gasto</Text>
+                <TextInput style={estilos.input} placeholder="Concepto (ej. Compra de hojas)" placeholderTextColor={colors.textTertiary}
+                  value={conceptoGasto} onChangeText={setConceptoGasto} />
+                <TextInput style={estilos.input} placeholder="Monto (Bs.)" placeholderTextColor={colors.textTertiary}
+                  value={montoGasto} onChangeText={setMontoGasto} keyboardType="numeric" />
+                <AnimatedPressable style={[estilos.botonPrincipal, { backgroundColor: colors.danger }]} onPress={registrarEgreso}>
                   <Ionicons name="remove-circle" size={20} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>Registrar Egreso</Text>
+                  <Text style={estilos.textoBotonPrincipal}>Registrar Egreso</Text>
                 </AnimatedPressable>
               </View>
 
               {/* Ventas del turno */}
-              <Text style={[styles.listTitle, { marginTop: 24 }]}>Ventas del Turno ({mySalesToday.length})</Text>
-              {mySalesToday.length === 0 ? (
-                <View style={styles.emptyCard}><Text style={styles.emptyText}>Sin ventas en este turno</Text></View>
+              <Text style={[estilos.tituloLista, { marginTop: 24 }]}>Ventas del Turno ({misVentasHoy.length})</Text>
+              {misVentasHoy.length === 0 ? (
+                <View style={estilos.tarjetaVacia}><Text style={estilos.textoVacio}>Sin ventas en este turno</Text></View>
               ) : (
-                mySalesToday.map((sale) => (
-                  <View key={sale.id} style={styles.listCard}>
+                misVentasHoy.map((venta) => (
+                  <View key={venta.id} style={estilos.tarjetaLista}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.listCardTitle}>Asiento #{sale.seat_number} — {sale.passenger_name}</Text>
-                      <Text style={styles.listCardSub}>{sale.trip?.route?.name} · {sale.trip?.departure_time?.substring(0, 5)} · Bs. {parseFloat(sale.price_paid).toFixed(2)}</Text>
+                      <Text style={estilos.tituloTarjetaLista}>Asiento #{venta.numero_asiento} — {venta.nombre_pasajero}</Text>
+                      <Text style={estilos.subtituloTarjetaLista}>{venta.viaje?.ruta?.nombre} · {venta.viaje?.hora_salida?.substring(0, 5)} · Bs. {parseFloat(venta.precio_pagado).toFixed(2)}</Text>
                     </View>
-                    {sale.status === 'ACTIVE' ? (
-                      <AnimatedPressable style={styles.cancelPill} onPress={() => handleCancelTicket(sale.id, parseFloat(sale.price_paid))}>
-                        <Text style={styles.cancelPillText}>Anular</Text>
+                    {venta.estado === 'ACTIVO' ? (
+                      <AnimatedPressable style={estilos.pastillaAnulacion} onPress={() => anularBoleto(venta.id, parseFloat(venta.precio_pagado))}>
+                        <Text style={estilos.textoPastillaAnulacion}>Anular</Text>
                       </AnimatedPressable>
                     ) : (
-                      <View style={[styles.statusPill, { backgroundColor: colors.tintDanger }]}>
-                        <Text style={[styles.statusPillText, { color: colors.danger }]}>Anulado</Text>
+                      <View style={[estilos.pastillaEstado, { backgroundColor: colors.tintDanger }]}>
+                        <Text style={[estilos.textoPastillaEstado, { color: colors.danger }]}>Anulado</Text>
                       </View>
                     )}
                   </View>
@@ -842,39 +842,39 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
       )}
 
       {/* MODAL BOLETO DIGITAL */}
-      <Modal visible={showReceiptModal} transparent animationType="fade" onRequestClose={() => setShowReceiptModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.receiptHeader}>SINDICATO TRANS</Text>
-            <Text style={styles.receiptSub}>Boleto Digital de Viaje</Text>
-            <View style={styles.divider} />
-            {lastSoldTicket && (
-              <View style={styles.receiptBody}>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>ID</Text><Text style={styles.receiptVal}>#{lastSoldTicket.id}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Fecha</Text><Text style={styles.receiptVal}>{lastSoldTicket.trip_date} {lastSoldTicket.departure_time?.substring(0, 5)}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Vehículo</Text><Text style={styles.receiptVal}>{lastSoldTicket.plate}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Chofer</Text><Text style={styles.receiptVal}>{lastSoldTicket.driver}</Text></View>
-                <View style={styles.divider} />
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Pasajero</Text><Text style={styles.receiptValBold}>{lastSoldTicket.passenger_name}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>C.I.</Text><Text style={styles.receiptVal}>{lastSoldTicket.passenger_ci}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Ruta</Text><Text style={styles.receiptVal}>{lastSoldTicket.origin} ➔ {lastSoldTicket.destination}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Asiento</Text><Text style={[styles.receiptValBold, { color: colors.primary, fontSize: 20 }]}>{lastSoldTicket.seat_number}</Text></View>
-                <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Monto</Text><Text style={[styles.receiptValBold, { color: colors.success, fontSize: 20 }]}>Bs. {parseFloat(lastSoldTicket.price_paid).toFixed(2)}</Text></View>
+      <Modal visible={mostrarReciboModal} transparent animationType="fade" onRequestClose={() => setMostrarReciboModal(false)}>
+        <View style={estilos.pantallaModal}>
+          <View style={estilos.tarjetaModal}>
+            <Text style={estilos.cabeceraRecibo}>SINDICATO TRANS</Text>
+            <Text style={estilos.subRecibo}>Boleto Digital de Viaje</Text>
+            <View style={estilos.divisor} />
+            {ultimoBoletoVendido && (
+              <View style={estilos.cuerpoRecibo}>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>ID</Text><Text style={estilos.valorRecibo}>#{ultimoBoletoVendido.id}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Fecha</Text><Text style={estilos.valorRecibo}>{ultimoBoletoVendido.fecha_viaje} {ultimoBoletoVendido.hora_salida?.substring(0, 5)}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Vehículo</Text><Text style={estilos.valorRecibo}>{ultimoBoletoVendido.placa}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Chofer</Text><Text style={estilos.valorRecibo}>{ultimoBoletoVendido.chofer}</Text></View>
+                <View style={estilos.divisor} />
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Pasajero</Text><Text style={estilos.valorReciboNegrita}>{ultimoBoletoVendido.nombre_pasajero}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>C.I.</Text><Text style={estilos.valorRecibo}>{ultimoBoletoVendido.ci_pasajero}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Ruta</Text><Text style={estilos.valorRecibo}>{ultimoBoletoVendido.origen} ➔ {ultimoBoletoVendido.destino}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Asiento</Text><Text style={[estilos.valorReciboNegrita, { color: colors.primary, fontSize: 20 }]}>{ultimoBoletoVendido.numero_asiento}</Text></View>
+                <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Monto</Text><Text style={[estilos.valorReciboNegrita, { color: colors.success, fontSize: 20 }]}>Bs. {parseFloat(ultimoBoletoVendido.precio_pagado).toFixed(2)}</Text></View>
               </View>
             )}
-            <View style={styles.divider} />
-            <View style={styles.modalActions}>
-              <AnimatedPressable style={[styles.modalBtn, { backgroundColor: colors.primary }]}
-                onPress={() => { showToast('Imprimiendo recibo...', 'info'); setShowReceiptModal(false); }}>
+            <View style={estilos.divisor} />
+            <View style={estilos.accionesModal}>
+              <AnimatedPressable style={[estilos.botonModal, { backgroundColor: colors.primary }]}
+                onPress={() => { mostrarToast('Imprimiendo recibo...', 'info'); setMostrarReciboModal(false); }}>
                 <Ionicons name="print-outline" size={18} color="#FFF" />
-                <Text style={styles.modalBtnText}>Imprimir</Text>
+                <Text style={estilos.textoBotonModal}>Imprimir</Text>
               </AnimatedPressable>
-              <AnimatedPressable style={[styles.modalBtn, { backgroundColor: '#25D366' }]} onPress={handleShareWhatsApp}>
+              <AnimatedPressable style={[estilos.botonModal, { backgroundColor: '#25D366' }]} onPress={compartirWhatsApp}>
                 <Ionicons name="logo-whatsapp" size={18} color="#FFF" />
-                <Text style={styles.modalBtnText}>Enviar</Text>
+                <Text style={estilos.textoBotonModal}>Enviar</Text>
               </AnimatedPressable>
-              <AnimatedPressable style={[styles.modalBtn, { backgroundColor: colors.surface }]} onPress={() => setShowReceiptModal(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.text }]}>Cerrar</Text>
+              <AnimatedPressable style={[estilos.botonModal, { backgroundColor: colors.surface }]} onPress={() => setMostrarReciboModal(false)}>
+                <Text style={[estilos.textoBotonModal, { color: colors.text }]}>Cerrar</Text>
               </AnimatedPressable>
             </View>
           </View>
@@ -882,46 +882,46 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
       </Modal>
 
       {/* MODAL APERTURA DE CAJA */}
-      <Modal visible={showCashOpenModal && !cashRegister} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { padding: 28 }]}>
-            <View style={[styles.modalIconCircle, { backgroundColor: colors.tint }]}>
+      <Modal visible={mostrarModalAbrirCaja && !cajaDiaria} transparent animationType="fade">
+        <View style={estilos.pantallaModal}>
+          <View style={[estilos.tarjetaModal, { padding: 28 }]}>
+            <View style={[estilos.circuloIconoModal, { backgroundColor: colors.tint }]}>
               <Ionicons name="lock-open" size={32} color={colors.primary} />
             </View>
-            <Text style={styles.modalTitle}>Apertura de Caja</Text>
-            <Text style={styles.modalDesc}>Registre el saldo inicial de caja para iniciar operaciones.</Text>
-            <TextInput style={[styles.input, { textAlign: 'center', fontSize: 20 }]} placeholder="Monto Inicial (Bs.)"
-              value={initialCashInput} onChangeText={setInitialCashInput} keyboardType="numeric" />
-            <AnimatedPressable style={styles.primaryButton} onPress={handleOpenCashRegister}>
-              <Text style={styles.primaryButtonText}>Abrir Caja</Text>
+            <Text style={estilos.tituloModal}>Apertura de Caja</Text>
+            <Text style={estilos.descripcionModal}>Registre el saldo inicial de caja para iniciar operaciones.</Text>
+            <TextInput style={[estilos.input, { textAlign: 'center', fontSize: 20 }]} placeholder="Monto Inicial (Bs.)"
+              value={montoInicialCaja} onChangeText={setMontoInicialCaja} keyboardType="numeric" />
+            <AnimatedPressable style={estilos.botonPrincipal} onPress={manejarAperturaCaja}>
+              <Text style={estilos.textoBotonPrincipal}>Abrir Caja</Text>
             </AnimatedPressable>
           </View>
         </View>
       </Modal>
 
       {/* MODAL CIERRE DE CAJA */}
-      <Modal visible={showCashCloseModal} transparent animationType="fade" onRequestClose={() => setShowCashCloseModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { padding: 28 }]}>
-            <View style={[styles.modalIconCircle, { backgroundColor: colors.tintDanger }]}>
+      <Modal visible={mostrarModalCerrarCaja} transparent animationType="fade" onRequestClose={() => setMostrarModalCerrarCaja(false)}>
+        <View style={estilos.pantallaModal}>
+          <View style={[estilos.tarjetaModal, { padding: 28 }]}>
+            <View style={[estilos.circuloIconoModal, { backgroundColor: colors.tintDanger }]}>
               <Ionicons name="lock-closed" size={32} color={colors.danger} />
             </View>
-            <Text style={styles.modalTitle}>Cierre de Caja</Text>
-            <Text style={styles.modalDesc}>Arqueo de caja. Ingrese el total de efectivo físico.</Text>
-            <View style={styles.receiptBody}>
-              <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Saldo Inicial</Text><Text style={styles.receiptVal}>Bs. {parseFloat(cashRegister?.initial_amount.toString() || '0').toFixed(2)}</Text></View>
-              <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Ingresos</Text><Text style={styles.receiptVal}>Bs. {officeIncomes.toFixed(2)}</Text></View>
-              <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Gastos</Text><Text style={styles.receiptVal}>Bs. {officeExpenses.toFixed(2)}</Text></View>
-              <View style={styles.divider} />
-              <View style={styles.receiptRow}><Text style={styles.receiptLabel}>Esperado</Text><Text style={styles.receiptValBold}>Bs. {(parseFloat(cashRegister?.initial_amount.toString() || '0') + officeIncomes - officeExpenses).toFixed(2)}</Text></View>
+            <Text style={estilos.tituloModal}>Cierre de Caja</Text>
+            <Text style={estilos.descripcionModal}>Arqueo de caja. Ingrese el total de efectivo físico.</Text>
+            <View style={estilos.cuerpoRecibo}>
+              <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Saldo Inicial</Text><Text style={estilos.valorRecibo}>Bs. {parseFloat(cajaDiaria?.monto_inicial.toString() || '0').toFixed(2)}</Text></View>
+              <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Ingresos</Text><Text style={estilos.valorRecibo}>Bs. {ingresosOficina.toFixed(2)}</Text></View>
+              <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Gastos</Text><Text style={estilos.valorRecibo}>Bs. {egresosOficina.toFixed(2)}</Text></View>
+              <View style={estilos.divisor} />
+              <View style={estilos.filaRecibo}><Text style={estilos.etiquetaRecibo}>Esperado</Text><Text style={estilos.valorReciboNegrita}>Bs. {(parseFloat(cajaDiaria?.monto_inicial.toString() || '0') + ingresosOficina - egresosOficina).toFixed(2)}</Text></View>
             </View>
-            <TextInput style={[styles.input, { textAlign: 'center', fontSize: 20 }]} placeholder="Efectivo en mano (Bs.)"
-              value={finalCashInput} onChangeText={setFinalCashInput} keyboardType="numeric" />
-            <AnimatedPressable style={[styles.primaryButton, { backgroundColor: colors.danger }]} onPress={handleCloseCashRegister}>
-              <Text style={styles.primaryButtonText}>Confirmar Cierre</Text>
+            <TextInput style={[estilos.input, { textAlign: 'center', fontSize: 20 }]} placeholder="Efectivo en mano (Bs.)"
+              value={montoFinalCajaInput} onChangeText={setMontoFinalCajaInput} keyboardType="numeric" />
+            <AnimatedPressable style={[estilos.botonPrincipal, { backgroundColor: colors.danger }]} onPress={manejarCierreCaja}>
+              <Text style={estilos.textoBotonPrincipal}>Confirmar Cierre</Text>
             </AnimatedPressable>
-            <AnimatedPressable style={styles.textButton} onPress={() => setShowCashCloseModal(false)}>
-              <Text style={styles.textButtonLabel}>Cancelar</Text>
+            <AnimatedPressable style={estilos.botonTexto} onPress={() => setMostrarModalCerrarCaja(false)}>
+              <Text style={estilos.etiquetaBotonTexto}>Cancelar</Text>
             </AnimatedPressable>
           </View>
         </View>
@@ -930,116 +930,116 @@ export default function SecretaryPosScreen({ navigation }: SecretaryPosScreenPro
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.background },
 
   // Header
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
-  headerTitle: { ...typography.title2, color: colors.text },
-  headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },
-  headerActions: { flexDirection: 'row', gap: 8 },
-  iconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  tituloHeader: { ...typography.title2, color: colors.text },
+  subtituloHeader: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },
+  accionesHeader: { flexDirection: 'row', gap: 8 },
+  botonIcono: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
 
   // Segmented
-  segmentedWrapper: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.separator },
+  envolturaSegmented: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.separator },
 
   // Scroll
-  scrollContent: { padding: 20, paddingBottom: 40, gap: 16 },
-  loadingText: { ...typography.footnote, color: colors.textSecondary, marginTop: 12 },
+  contenidoScroll: { padding: 20, paddingBottom: 40, gap: 16 },
+  textoCargando: { ...typography.footnote, color: colors.textSecondary, marginTop: 12 },
 
   // Cards
-  card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  cardLabel: { ...typography.footnote, color: colors.textSecondary, fontFamily: typography.fontFamilySemiBold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  cardTitle: { ...typography.title3, color: colors.text, marginBottom: 16 },
+  tarjeta: { backgroundColor: colors.card, borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  etiquetaTarjeta: { ...typography.footnote, color: colors.textSecondary, fontFamily: typography.fontFamilySemiBold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tituloTarjeta: { ...typography.title3, color: colors.text, marginBottom: 16 },
 
   // Chips
-  chipButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, marginRight: 8 },
-  chipButtonActive: { backgroundColor: colors.primary },
-  chipText: { ...typography.subhead, color: colors.text },
-  chipTextActive: { color: '#FFF', fontFamily: typography.fontFamilySemiBold },
+  botonChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, marginRight: 8 },
+  botonChipActivo: { backgroundColor: colors.primary },
+  textoChip: { ...typography.subhead, color: colors.text },
+  textoChipActivo: { color: '#FFF', fontFamily: typography.fontFamilySemiBold },
 
   // Tabs content
-  tabContent: { gap: 16 },
+  contenidoPestana: { gap: 16 },
 
   // Seat badge
-  seatBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  seatBadge: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
-  seatBadgeText: { ...typography.headline, color: '#FFF' },
-  fieldLabel: { ...typography.footnote, color: colors.textSecondary, fontFamily: typography.fontFamilySemiBold, marginBottom: 6, marginTop: 4 },
+  filaInsigniaAsiento: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  insigniaAsiento: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
+  textoInsigniaAsiento: { ...typography.headline, color: '#FFF' },
+  etiquetaCampo: { ...typography.footnote, color: colors.textSecondary, fontFamily: typography.fontFamilySemiBold, marginBottom: 6, marginTop: 4 },
 
   // Payment row
-  paymentRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  filaPago: { flexDirection: 'row', gap: 8, marginBottom: 16 },
 
   // Inputs
   input: { ...typography.body, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: colors.text, marginBottom: 12 },
-  inputRow: { flexDirection: 'row', gap: 8 },
+  filaInput: { flexDirection: 'row', gap: 8 },
 
   // Price
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: 8 },
-  priceLabel: { ...typography.headline, color: colors.text },
-  priceValue: { ...typography.title2, color: colors.success },
+  filaPrecio: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderTopWidth: 0.5, borderTopColor: colors.separator, marginBottom: 8 },
+  etiquetaPrecio: { ...typography.headline, color: colors.text },
+  valorPrecio: { ...typography.title2, color: colors.success },
 
   // Buttons
-  primaryButton: { flexDirection: 'row', height: 52, backgroundColor: colors.primary, borderRadius: 14, justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 4, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
-  buttonDisabled: { backgroundColor: colors.surface, shadowOpacity: 0 },
-  primaryButtonText: { ...typography.headline, color: '#FFF' },
-  textButton: { paddingVertical: 12, alignItems: 'center' },
-  textButtonLabel: { ...typography.subhead, color: colors.textSecondary },
+  botonPrincipal: { flexDirection: 'row', height: 52, backgroundColor: colors.primary, borderRadius: 14, justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 4, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  botonDeshabilitado: { backgroundColor: colors.surface, shadowOpacity: 0 },
+  textoBotonPrincipal: { ...typography.headline, color: '#FFF' },
+  botonTexto: { paddingVertical: 12, alignItems: 'center' },
+  etiquetaBotonTexto: { ...typography.subhead, color: colors.textSecondary },
 
   // Section label
-  sectionLabel: { ...typography.caption1, color: colors.primary, fontFamily: typography.fontFamilySemiBold, marginBottom: 8, marginTop: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+  etiquetaSeccion: { ...typography.caption1, color: colors.primary, fontFamily: typography.fontFamilySemiBold, marginBottom: 8, marginTop: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // Lists
-  listTitle: { ...typography.title3, color: colors.text, marginBottom: 8 },
-  listCard: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 8, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
-  listCardTitle: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text },
-  listCardSub: { ...typography.caption1, color: colors.textSecondary, marginTop: 3 },
+  tituloLista: { ...typography.title3, color: colors.text, marginBottom: 8 },
+  tarjetaLista: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 8, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  tituloTarjetaLista: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text },
+  subtituloTarjetaLista: { ...typography.caption1, color: colors.textSecondary, marginTop: 3 },
 
   // Status pills
-  statusPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  statusPillText: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold },
-  cancelPill: { backgroundColor: colors.tintDanger, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  cancelPillText: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: colors.danger },
+  pastillaEstado: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  textoPastillaEstado: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold },
+  pastillaAnulacion: { backgroundColor: colors.tintDanger, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  textoPastillaAnulacion: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: colors.danger },
 
   // Empty
-  emptyCard: { backgroundColor: colors.card, padding: 32, borderRadius: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
-  emptyText: { ...typography.subhead, color: colors.textSecondary },
+  tarjetaVacia: { backgroundColor: colors.card, padding: 32, borderRadius: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  textoVacio: { ...typography.subhead, color: colors.textSecondary },
 
   // Kanban
-  kanbanSection: { backgroundColor: colors.card, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  kanbanHeader: { borderLeftWidth: 4, paddingLeft: 12, marginBottom: 12 },
-  kanbanHeaderText: { ...typography.headline, color: colors.text },
-  kanbanCard: { backgroundColor: colors.background, borderRadius: 12, padding: 14, marginBottom: 10 },
-  kanbanCardTitle: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text },
-  kanbanCardSub: { ...typography.caption1, color: colors.textSecondary, marginTop: 3 },
-  kanbanBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 10 },
-  kanbanBtnText: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
-  kanbanEmpty: { ...typography.subhead, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 },
+  seccionKanban: { backgroundColor: colors.card, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  cabeceraKanban: { borderLeftWidth: 4, paddingLeft: 12, marginBottom: 12 },
+  textoCabeceraKanban: { ...typography.headline, color: colors.text },
+  tarjetaKanban: { backgroundColor: colors.background, borderRadius: 12, padding: 14, marginBottom: 10 },
+  tituloTarjetaKanban: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text },
+  subtituloTarjetaKanban: { ...typography.caption1, color: colors.textSecondary, marginTop: 3 },
+  botonKanban: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 10 },
+  textoBotonKanban: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  textoVacioKanban: { ...typography.subhead, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 },
 
   // KPIs
-  kpiRow: { flexDirection: 'row', gap: 12 },
-  kpiCard: { flex: 1, backgroundColor: colors.card, padding: 20, borderRadius: 16, borderLeftWidth: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  kpiLabel: { ...typography.footnote, color: colors.textSecondary, marginBottom: 6 },
-  kpiValue: { ...typography.title2, color: colors.text },
-  kpiValueLarge: { ...typography.largeTitle, marginTop: 4 },
+  filaKpi: { flexDirection: 'row', gap: 12 },
+  tarjetaKpi: { flex: 1, backgroundColor: colors.card, padding: 20, borderRadius: 16, borderLeftWidth: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  etiquetaKpi: { ...typography.footnote, color: colors.textSecondary, marginBottom: 6 },
+  valorKpi: { ...typography.title2, color: colors.text },
+  valorKpiGrande: { ...typography.largeTitle, marginTop: 4 },
 
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 },
-  modalIconCircle: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { ...typography.title3, color: colors.text, marginBottom: 6 },
-  modalDesc: { ...typography.footnote, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
-  modalActions: { flexDirection: 'row', width: '100%', gap: 8, marginTop: 16 },
-  modalBtn: { flex: 1, flexDirection: 'row', height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 6 },
-  modalBtnText: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  pantallaModal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  tarjetaModal: { backgroundColor: '#FFF', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 },
+  circuloIconoModal: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  tituloModal: { ...typography.title3, color: colors.text, marginBottom: 6 },
+  descripcionModal: { ...typography.footnote, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  accionesModal: { flexDirection: 'row', width: '100%', gap: 8, marginTop: 16 },
+  botonModal: { flex: 1, flexDirection: 'row', height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 6 },
+  textoBotonModal: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
 
   // Receipt
-  receiptHeader: { ...typography.headline, color: colors.text, textAlign: 'center' },
-  receiptSub: { ...typography.caption1, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
-  divider: { height: 0.5, backgroundColor: colors.separator, width: '100%', marginVertical: 14 },
-  receiptBody: { width: '100%' },
-  receiptRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  receiptLabel: { ...typography.caption1, color: colors.textSecondary },
-  receiptVal: { ...typography.caption1, color: colors.text },
-  receiptValBold: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: colors.text },
+  cabeceraRecibo: { ...typography.headline, color: colors.text, textAlign: 'center' },
+  subRecibo: { ...typography.caption1, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+  divisor: { height: 0.5, backgroundColor: colors.separator, width: '100%', marginVertical: 14 },
+  cuerpoRecibo: { width: '100%' },
+  filaRecibo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  etiquetaRecibo: { ...typography.caption1, color: colors.textSecondary },
+  valorRecibo: { ...typography.caption1, color: colors.text },
+  valorReciboNegrita: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: colors.text },
 });

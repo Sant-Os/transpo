@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -7,156 +7,156 @@ import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { User, Vehicle } from '../../types';
+import { Usuario, Vehiculo } from '../../types';
 
-export interface SocioDashboardScreenProps {
+export interface PropiedadesPantallaSocio {
   navigation: any;
 }
 
-export default function SocioDashboardScreen({ navigation }: SocioDashboardScreenProps) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+export default function SocioDashboardScreen({ navigation }: PropiedadesPantallaSocio) {
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [refrescando, setRefrescando] = useState<boolean>(false);
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [totalIncome, setTotalIncome] = useState<number>(0);
-  const [totalExpense, setTotalExpense] = useState<number>(0);
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [ingresosTotales, setIngresosTotales] = useState<number>(0);
+  const [egresosTotales, setEgresosTotales] = useState<number>(0);
 
   useEffect(() => {
-    loadData();
+    cargarDatos();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const cargarDatos = async () => {
+    setCargando(true);
     try {
-      const user = await AuthService.getCurrentUser();
-      setCurrentUser(user);
+      const usuario = await AuthService.getCurrentUser();
+      setUsuarioActual(usuario);
 
-      if (user) {
+      if (usuario) {
         // Cargar vehículos del socio
-        const { data: vehicleData } = await supabase
-          .from('vehicles')
+        const { data: vehiculosData } = await supabase
+          .from('vehiculos')
           .select('*')
-          .eq('owner_id', user.id);
+          .eq('propietario_id', usuario.id);
         
-        if (vehicleData) setVehicles(vehicleData as Vehicle[]);
+        if (vehiculosData) setVehiculos(vehiculosData as Vehiculo[]);
 
         // Cargar finanzas de los vehículos del socio
-        if (vehicleData && vehicleData.length > 0) {
-          const vehicleIds = vehicleData.map(v => v.id);
+        if (vehiculosData && vehiculosData.length > 0) {
+          const vehiculosIds = vehiculosData.map(v => v.id);
 
-          const { data: incomes } = await supabase
-            .from('finances')
-            .select('amount')
-            .in('vehicle_id', vehicleIds)
-            .eq('type', 'INCOME');
+          const { data: ingresos } = await supabase
+            .from('finanzas')
+            .select('monto')
+            .in('vehiculo_id', vehiculosIds)
+            .eq('tipo', 'INGRESO');
           
-          if (incomes) {
-            setTotalIncome(incomes.reduce((sum, f) => sum + parseFloat(f.amount), 0));
+          if (ingresos) {
+            setIngresosTotales(ingresos.reduce((suma, f) => suma + parseFloat(f.monto), 0));
           }
 
-          const { data: expenses } = await supabase
-            .from('finances')
-            .select('amount')
-            .in('vehicle_id', vehicleIds)
-            .eq('type', 'EXPENSE');
+          const { data: egresos } = await supabase
+            .from('finanzas')
+            .select('monto')
+            .in('vehiculo_id', vehiculosIds)
+            .eq('tipo', 'EGRESO');
           
-          if (expenses) {
-            setTotalExpense(expenses.reduce((sum, f) => sum + parseFloat(f.amount), 0));
+          if (egresos) {
+            setEgresosTotales(egresos.reduce((suma, f) => suma + parseFloat(f.monto), 0));
           }
         }
       }
     } catch (error) {
       console.error('Error cargando datos del socio:', error);
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+  const alRefrescar = async () => {
+    setRefrescando(true);
+    await cargarDatos();
+    setRefrescando(false);
   };
 
-  const handleLogout = async () => {
+  const saldoNeto = ingresosTotales - egresosTotales;
+  const formatearDinero = (monto: number) => `Bs. ${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+
+  const manejarCierreSesion = async () => {
     await AuthService.logout();
     navigation.replace('Login');
   };
 
-  const netProfit = totalIncome - totalExpense;
-  const formatMoney = (amount: number) => `Bs. ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={estilos.contenedor}>
+      <View style={estilos.header}>
         <View>
-          <Text style={styles.headerTitle}>Panel de Socio</Text>
-          <Text style={styles.headerSubtitle}>
-            {currentUser ? currentUser.full_name : 'Propietario'}
+          <Text style={estilos.headerTitle}>Panel de Socio</Text>
+          <Text style={estilos.headerSubtitle}>
+            {usuarioActual ? usuarioActual.nombre_completo : 'Propietario'}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <AnimatedPressable style={styles.iconButton} onPress={onRefresh}>
+          <AnimatedPressable style={estilos.iconButton} onPress={alRefrescar}>
             <Ionicons name="refresh" size={22} color={colors.primary} />
           </AnimatedPressable>
-          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
+          <AnimatedPressable style={estilos.iconButton} onPress={manejarCierreSesion}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           </AnimatedPressable>
         </View>
       </View>
 
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={estilos.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          <RefreshControl refreshing={refrescando} onRefresh={alRefrescar} colors={[colors.primary]} />
         }
       >
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Ingresos Brutos</Text>
-            <Text style={styles.statValue}>{formatMoney(totalIncome)}</Text>
+        <View style={estilos.statsContainer}>
+          <View style={estilos.statBox}>
+            <Text style={estilos.statLabel}>Ingresos Brutos</Text>
+            <Text style={estilos.statValue}>{formatearDinero(ingresosTotales)}</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Egresos</Text>
-            <Text style={[styles.statValue, { color: colors.danger }]}>
-              - {formatMoney(totalExpense)}
+          <View style={estilos.statBox}>
+            <Text style={estilos.statLabel}>Egresos</Text>
+            <Text style={[estilos.statValue, { color: colors.danger }]}>
+              - {formatearDinero(egresosTotales)}
             </Text>
           </View>
         </View>
 
-        <View style={[styles.statBox, styles.totalBox]}>
-          <Text style={styles.statLabel}>Utilidad Neta</Text>
-          <Text style={[styles.statValue, { color: netProfit >= 0 ? colors.success : colors.danger, fontSize: 32 }]}>
-            {formatMoney(netProfit)}
+        <View style={[estilos.statBox, estilos.totalBox]}>
+          <Text style={estilos.statLabel}>Utilidad Neta</Text>
+          <Text style={[estilos.statValue, { color: saldoNeto >= 0 ? colors.success : colors.danger, fontSize: 32 }]}>
+            {formatearDinero(saldoNeto)}
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Mi Flota ({vehicles.length} vehículos)</Text>
+        <Text style={estilos.sectionTitle}>Mi Flota ({vehiculos.length} vehículos)</Text>
         
-        {vehicles.length === 0 ? (
-          <View style={styles.emptyCard}>
+        {vehiculos.length === 0 ? (
+          <View style={estilos.emptyCard}>
             <Ionicons name="car-outline" size={40} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No tienes vehículos registrados</Text>
+            <Text style={estilos.emptyText}>No tienes vehículos registrados</Text>
           </View>
         ) : (
-          vehicles.map((vehicle) => (
-            <View key={vehicle.id} style={styles.vehicleCard}>
-              <View style={styles.vehicleHeader}>
+          vehiculos.map((vehiculoItem) => (
+            <View key={vehiculoItem.id} style={estilos.vehicleCard}>
+              <View style={estilos.vehicleHeader}>
                 <Ionicons name="bus" size={24} color={colors.text} />
-                <Text style={styles.plate}>Placa: {vehicle.plate}</Text>
-                <View style={[styles.statusBadge, { 
-                  backgroundColor: vehicle.status === 'ACTIVE' ? colors.success : 
-                    vehicle.status === 'MAINTENANCE' ? colors.warning : colors.danger 
+                <Text style={estilos.plate}>Placa: {vehiculoItem.placa}</Text>
+                <View style={[estilos.statusBadge, { 
+                  backgroundColor: vehiculoItem.estado === 'ACTIVO' ? colors.success : 
+                    vehiculoItem.estado === 'MANTENIMIENTO' ? colors.warning : colors.danger 
                 }]}>
-                  <Text style={styles.statusText}>
-                    {vehicle.status === 'ACTIVE' ? 'Activo' : 
-                     vehicle.status === 'MAINTENANCE' ? 'Mantenimiento' : 'Inactivo'}
+                  <Text style={estilos.statusText}>
+                    {vehiculoItem.estado === 'ACTIVO' ? 'Activo' : 
+                     vehiculoItem.estado === 'MANTENIMIENTO' ? 'Mantenimiento' : 'Inactivo'}
                   </Text>
                 </View>
               </View>
-              <Text style={styles.routeText}>
-                {vehicle.model || 'Modelo N/A'} • {vehicle.year || 'Año N/A'} • {vehicle.capacity} asientos
+              <Text style={estilos.routeText}>
+                {vehiculoItem.modelo || 'Modelo N/A'} • {vehiculoItem.gestion || 'Gestión N/A'} • {vehiculoItem.capacidad} asientos
               </Text>
             </View>
           ))
@@ -166,8 +166,8 @@ export default function SocioDashboardScreen({ navigation }: SocioDashboardScree
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   headerTitle: { ...typography.title2, color: colors.text },
   headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },

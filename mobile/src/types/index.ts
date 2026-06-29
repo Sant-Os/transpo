@@ -1,80 +1,98 @@
 // ============================================================
 // DEFINICIONES DE TIPOS DE DATOS (TypeScript Interface Specs)
 // SISTEMA DE TRANSPORTE SINDICAL
+// IDIOMA: 100% ESPAÑOL
 // ============================================================
 
-export type UserRole = 'ADMIN' | 'SECRETARY' | 'DRIVER' | 'SOCIO';
+export type RolUsuario = 'ADMINISTRADOR' | 'SECRETARIA' | 'CHOFER' | 'SOCIO';
 
-export interface User {
+export interface Usuario {
   id: number;
-  username: string;
-  full_name: string;
+  nombre_usuario: string;
+  nombre_completo: string;
   ci: string;
-  phone: string;
-  role: UserRole;
-  office_id?: number;
-  is_active: boolean;
-  created_at?: string;
+  telefono: string;
+  rol: RolUsuario;
+  oficina_id?: number;
+  activo: boolean;
+  creado_en?: string;
 }
 
-export interface Vehicle {
+export interface Vehiculo {
   id: number;
-  plate: string;
-  model: string;
-  year: number;
-  capacity: number; // Por defecto 18 asientos
-  owner_id: number;
-  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
+  placa: string;
+  modelo: string;
+  gestion: number;
+  capacidad: number; // Por defecto 18 asientos
+  propietario_id: number;
+  estado: 'ACTIVO' | 'MANTENIMIENTO' | 'INACTIVO';
 }
 
-export interface Route {
+export interface Ruta {
   id: number;
-  name: string;
-  origin: string;
-  destination: string;
-  estimated_minutes: number;
+  nombre: string;
+  origen: string;
+  destino: string;
+  minutos_estimados: number;
 }
 
-export interface Segment {
+export interface Tramo {
   id: number;
-  route_id: number;
-  origin: string;
-  destination: string;
-  order_index: number;
-  price: number;
-  distance_km: number;
+  ruta_id: number;
+  origen: string;
+  destino: string;
+  indice_orden: number;
+  precio: number;
+  distancia_km: number;
 }
 
-export interface Trip {
+export interface Viaje {
   id: number;
-  route_id: number;
-  vehicle_id: number;
-  driver_id: number;
-  office_id: number;
-  trip_date: string;
-  departure_time: string;
-  status: 'SCHEDULED' | 'BOARDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  ruta_id: number;
+  vehiculo_id: number;
+  chofer_id: number;
+  oficina_id: number;
+  fecha_viaje: string;
+  hora_salida: string;
+  estado: 'PROGRAMADO' | 'ABORDANDO' | 'EN_RUTA' | 'COMPLETADO' | 'CANCELADO';
 }
 
-export interface Ticket {
+export interface Boleto {
   id: number;
-  trip_id: number;
-  seat_number: number;
-  passenger_name: string;
-  passenger_ci: string;
-  origin_segment_id?: number;
-  dest_segment_id?: number;
-  price_paid: number;
-  status: 'ACTIVE' | 'USED' | 'CANCELLED';
-  sold_by: number;
+  viaje_id: number;
+  numero_asiento: number;
+  nombre_pasajero: string;
+  ci_pasajero: string;
+  tramo_destino_id?: number;
+  precio_pagado: number;
+  estado: 'ACTIVO' | 'USADO' | 'CANCELADO';
+  vendido_por: number;
 }
 
-export interface CashRegister {
+export interface Encomienda {
   id: number;
-  opened_by: number;
-  opened_at: string;
-  closed_at?: string;
-  initial_amount: number;
-  final_amount?: number;
-  status: 'OPEN' | 'CLOSED';
+  viaje_id: number;
+  nombre_remitente: string;
+  ci_remitente?: string;
+  telefono_remitente?: string;
+  nombre_destinatario: string;
+  ci_destinatario?: string;
+  telefono_destinatario?: string;
+  descripcion: string;
+  peso_kg: number;
+  precio: number;
+  estado: 'PENDIENTE' | 'EN_RUTA' | 'ENTREGADO' | 'DEVUELTO';
+  codigo_qr?: string;
+  registrado_por: number;
+  entregado_en?: string;
+}
+
+export interface CajaDiaria {
+  id: number;
+  abierta_por: number;
+  abierta_en: string;
+  cerrada_en?: string;
+  monto_inicial: number;
+  monto_final?: number;
+  estado: 'ABIERTO' | 'CERRADO';
 }

@@ -1,25 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
-import { User } from '../types';
+import { Usuario } from '../types';
 
-const USER_STORAGE_KEY = '@user_session';
+const CLAVE_ALMACENAMIENTO_USUARIO = '@sesion_usuario';
 
-export interface LoginResult {
-  user: User;
+export interface ResultadoInicioSesion {
+  usuario: Usuario;
   roles: string[];
 }
 
 export const AuthService = {
   /**
-   * Login mediante tabla propia "users" (sin Supabase Auth)
-   * Busca el usuario por username y password en la tabla directamente.
+   * Inicio de sesión utilizando la tabla "usuarios" propia (sin Supabase Auth)
+   * Llama a la función del servidor "verificar_usuario" pasándole los parámetros correspondientes.
    */
-  login: async (username: string, password: string): Promise<LoginResult> => {
+  login: async (nombre_usuario: string, contrasena: string): Promise<ResultadoInicioSesion> => {
     try {
       const { data, error } = await supabase
-        .rpc('verify_user', {
-          p_username: username,
-          p_password: password
+        .rpc('verificar_usuario', {
+          p_nombre_usuario: nombre_usuario,
+          p_contrasena: contrasena
         })
         .maybeSingle();
 
@@ -27,55 +27,55 @@ export const AuthService = {
         throw new Error('Usuario o contraseña incorrectos');
       }
 
-      // Guardar sesión en almacenamiento local
-      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data));
+      // Guardar sesión en el almacenamiento local del dispositivo
+      await AsyncStorage.setItem(CLAVE_ALMACENAMIENTO_USUARIO, JSON.stringify(data));
 
       return {
-        user: data as User,
-        roles: [(data as User).role]
+        usuario: data as Usuario,
+        roles: [(data as Usuario).rol]
       };
     } catch (error: any) {
-      console.error('Login error:', error.message);
+      console.error('Error de inicio de sesión:', error.message);
       throw error;
     }
   },
 
   /**
-   * Cerrar sesión — limpia el almacenamiento local
+   * Cerrar sesión — limpia el almacenamiento local del dispositivo
    */
   logout: async (): Promise<void> => {
     try {
-      await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      await AsyncStorage.removeItem(CLAVE_ALMACENAMIENTO_USUARIO);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Error al cerrar sesión:', error);
     }
   },
 
   /**
-   * Obtener el usuario actual desde la sesión guardada
+   * Obtener el usuario de la sesión actual
    */
-  getCurrentUser: async (): Promise<User | null> => {
+  getCurrentUser: async (): Promise<Usuario | null> => {
     try {
-      const userData = await AsyncStorage.getItem(USER_STORAGE_KEY);
-      return userData ? JSON.parse(userData) as User : null;
+      const datosUsuario = await AsyncStorage.getItem(CLAVE_ALMACENAMIENTO_USUARIO);
+      return datosUsuario ? (JSON.parse(datosUsuario) as Usuario) : null;
     } catch (error) {
       return null;
     }
   },
 
   /**
-   * Obtener el ID del usuario actual
+   * Obtener el ID del usuario de la sesión actual
    */
   getCurrentUserId: async (): Promise<number | null> => {
-    const user = await AuthService.getCurrentUser();
-    return user ? user.id : null;
+    const usuario = await AuthService.getCurrentUser();
+    return usuario ? usuario.id : null;
   },
 
   /**
-   * Verificar si hay una sesión activa
+   * Comprobar si hay una sesión activa
    */
   isLoggedIn: async (): Promise<boolean> => {
-    const user = await AuthService.getCurrentUser();
-    return user !== null;
+    const usuario = await AuthService.getCurrentUser();
+    return usuario !== null;
   }
 };

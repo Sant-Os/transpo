@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,442 +9,421 @@ import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import Toast from '../../components/Toast';
-import { User, Vehicle, Route, Trip } from '../../types';
+import SegmentedControl from '../../components/SegmentedControl';
+import { Usuario, Vehiculo, Ruta, Viaje } from '../../types';
 
-export interface AdminDashboardScreenProps {
+export interface PropiedadesPantallaAdmin {
   navigation: any;
 }
 
-export default function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+export default function AdminDashboardScreen({ navigation }: PropiedadesPantallaAdmin) {
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [refrescando, setRefrescando] = useState<boolean>(false);
 
   // KPIs
-  const [totalIncome, setTotalIncome] = useState<number>(0);
-  const [totalExpense, setTotalExpense] = useState<number>(0);
-  const [ticketCount, setTicketCount] = useState<number>(0);
-  const [parcelCount, setParcelCount] = useState<number>(0);
+  const [ingresoTotal, setIngresoTotal] = useState<number>(0);
+  const [egresoTotal, setEgresoTotal] = useState<number>(0);
+  const [cantidadBoletos, setCantidadBoletos] = useState<number>(0);
+  const [cantidadEncomiendas, setCantidadEncomiendas] = useState<number>(0);
 
-  // counts
-  const [userCount, setUserCount] = useState<number>(0);
-  const [vehicleCount, setVehicleCount] = useState<number>(0);
-  const [routeCount, setRouteCount] = useState<number>(0);
-  const [tripCount, setTripCount] = useState<number>(0);
+  // Contadores
+  const [cantidadUsuarios, setCantidadUsuarios] = useState<number>(0);
+  const [cantidadVehiculos, setCantidadVehiculos] = useState<number>(0);
+  const [cantidadRutas, setCantidadRutas] = useState<number>(0);
+  const [cantidadViajes, setCantidadViajes] = useState<number>(0);
 
-  // Lists
-  const [alerts, setAlerts] = useState<any[]>([]);
+  // Listas
+  const [alertas, setAlertas] = useState<any[]>([]);
 
-  // CRUD States
-  const [showMgmtModal, setShowMgmtModal] = useState<boolean>(false);
-  const [mgmtType, setMgmtType] = useState<'users' | 'vehicles' | 'routes' | 'trips'>('users');
-  const [mgmtList, setMgmtList] = useState<any[]>([]);
-  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  // Estados CRUD
+  const [mostrarModalGestion, setMostrarModalGestion] = useState<boolean>(false);
+  const [tipoGestion, setTipoGestion] = useState<'usuarios' | 'vehiculos' | 'rutas' | 'viajes'>('usuarios');
+  const [listaGestion, setListaGestion] = useState<any[]>([]);
+  const [mostrarFormularioAgregar, setMostrarFormularioAgregar] = useState<boolean>(false);
 
-  // Form Fields - Users
-  const [newUsername, setNewUsername] = useState<string>('');
-  const [newPassword, setNewPassword] = useState<string>('');
-  const [newFullName, setNewFullName] = useState<string>('');
-  const [newCI, setNewCI] = useState<string>('');
-  const [newPhone, setNewPhone] = useState<string>('');
-  const [newRole, setNewRole] = useState<string>('SECRETARY');
+  // Campos Formulario - Usuarios
+  const [nuevoNombreUsuario, setNuevoNombreUsuario] = useState<string>('');
+  const [nuevaContrasena, setNuevaContrasena] = useState<string>('');
+  const [nuevoNombreCompleto, setNuevoNombreCompleto] = useState<string>('');
+  const [nuevoCI, setNuevoCI] = useState<string>('');
+  const [nuevoTelefono, setNuevoTelefono] = useState<string>('');
+  const [nuevoRol, setNuevoRol] = useState<string>('SECRETARIA');
 
-  // Form Fields - Vehicles
-  const [newPlate, setNewPlate] = useState<string>('');
-  const [newModel, setNewModel] = useState<string>('');
-  const [newYear, setNewYear] = useState<string>('');
-  const [newCapacity, setNewCapacity] = useState<string>('18');
-  const [newOwnerId, setNewOwnerId] = useState<string>('');
+  // Campos Formulario - Vehículos
+  const [nuevaPlaca, setNuevaPlaca] = useState<string>('');
+  const [nuevoModelo, setNuevoModelo] = useState<string>('');
+  const [nuevaGestion, setNuevaGestion] = useState<string>('');
+  const [nuevaCapacidad, setNuevaCapacidad] = useState<string>('18');
+  const [nuevoPropietarioId, setNuevoPropietarioId] = useState<string>('');
 
-  // Form Fields - Routes
-  const [newRouteName, setNewRouteName] = useState<string>('');
-  const [newOrigin, setNewOrigin] = useState<string>('');
-  const [newDest, setNewDest] = useState<string>('');
-  const [newDuration, setNewDuration] = useState<string>('180');
+  // Campos Formulario - Rutas
+  const [nuevoNombreRuta, setNuevoNombreRuta] = useState<string>('');
+  const [nuevoOrigen, setNuevoOrigen] = useState<string>('');
+  const [nuevoDestino, setNuevoDestino] = useState<string>('');
+  const [nuevaDuracion, setNuevaDuracion] = useState<string>('180');
 
-  // Form Fields - Trips
-  const [newTripRouteId, setNewTripRouteId] = useState<string>('');
-  const [newTripVehicleId, setNewTripVehicleId] = useState<string>('');
-  const [newTripDriverId, setNewTripDriverId] = useState<string>('');
-  const [newTripTime, setNewTripTime] = useState<string>('14:00');
+  // Campos Formulario - Viajes
+  const [nuevoViajeRutaId, setNuevoViajeRutaId] = useState<string>('');
+  const [nuevoViajeVehiculoId, setNuevoViajeVehiculoId] = useState<string>('');
+  const [nuevoViajeChoferId, setNuevoViajeChoferId] = useState<string>('');
+  const [nuevoViajeHora, setNuevoViajeHora] = useState<string>('14:00');
 
   useEffect(() => {
-    loadDashboardData();
+    cargarDatosPanel();
   }, []);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const cargarDatosPanel = async () => {
+    setCargando(true);
     try {
-      const user = await AuthService.getCurrentUser();
-      setCurrentUser(user);
+      const usuario = await AuthService.getCurrentUser();
+      setUsuarioActual(usuario);
 
       await Promise.all([
-        loadFinancials(),
-        loadTickets(),
-        loadParcels(),
-        loadAlerts(),
-        loadSystemCounts()
+        cargarFinanzas(),
+        cargarBoletos(),
+        cargarEncomiendas(),
+        cargarAlertas(),
+        cargarContadoresSistema()
       ]);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const loadFinancials = async () => {
+  const cargarFinanzas = async () => {
     // Ingresos del día
-    const { data: incomes } = await supabase
-      .from('finances')
-      .select('amount')
-      .eq('type', 'INCOME');
+    const { data: ingresos } = await supabase
+      .from('finanzas')
+      .select('monto')
+      .eq('tipo', 'INGRESO');
     
-    if (incomes) {
-      const total = incomes.reduce((sum, f) => sum + parseFloat(f.amount), 0);
-      setTotalIncome(total);
+    if (ingresos) {
+      const total = ingresos.reduce((suma, f) => suma + parseFloat(f.monto), 0);
+      setIngresoTotal(total);
     }
 
     // Egresos del día
-    const { data: expenses } = await supabase
-      .from('finances')
-      .select('amount')
-      .eq('type', 'EXPENSE');
+    const { data: egresos } = await supabase
+      .from('finanzas')
+      .select('monto')
+      .eq('tipo', 'EGRESO');
     
-    if (expenses) {
-      const total = expenses.reduce((sum, f) => sum + parseFloat(f.amount), 0);
-      setTotalExpense(total);
+    if (egresos) {
+      const total = egresos.reduce((suma, f) => suma + parseFloat(f.monto), 0);
+      setEgresoTotal(total);
     }
   };
 
-  const loadTickets = async () => {
+  const cargarBoletos = async () => {
     const { count } = await supabase
-      .from('tickets')
+      .from('boletos')
       .select('*', { count: 'exact', head: true });
-    setTicketCount(count || 0);
+    setCantidadBoletos(count || 0);
   };
 
-  const loadParcels = async () => {
+  const cargarEncomiendas = async () => {
     const { count } = await supabase
-      .from('parcels')
+      .from('encomiendas')
       .select('*', { count: 'exact', head: true });
-    setParcelCount(count || 0);
+    setCantidadEncomiendas(count || 0);
   };
 
-  const loadAlerts = async () => {
+  const cargarAlertas = async () => {
     const { data } = await supabase
-      .from('alerts')
+      .from('alertas')
       .select(`
         *,
-        driver:users!alerts_driver_id_fkey(full_name),
-        vehicle:vehicles!alerts_vehicle_id_fkey(plate)
+        chofer:usuarios!alertas_chofer_id_fkey(nombre_completo),
+        vehiculo:vehiculos!alertas_vehiculo_id_fkey(placa)
       `)
-      .in('status', ['OPEN', 'MANAGING'])
-      .order('created_at', { ascending: false });
+      .in('estado', ['ABIERTO', 'EN_PROCESO'])
+      .order('creado_en', { ascending: false });
     
-    if (data) setAlerts(data);
+    if (data) setAlertas(data);
   };
 
-  const loadSystemCounts = async () => {
-    const { count: users } = await supabase.from('users').select('*', { count: 'exact', head: true });
-    const { count: vehicles } = await supabase.from('vehicles').select('*', { count: 'exact', head: true });
-    const { count: routes } = await supabase.from('routes').select('*', { count: 'exact', head: true });
-    const { count: trips } = await supabase.from('trips').select('*', { count: 'exact', head: true });
+  const cargarContadoresSistema = async () => {
+    const { count: usuarios } = await supabase.from('usuarios').select('*', { count: 'exact', head: true });
+    const { count: vehiculos } = await supabase.from('vehiculos').select('*', { count: 'exact', head: true });
+    const { count: rutas } = await supabase.from('rutas').select('*', { count: 'exact', head: true });
+    const { count: viajes } = await supabase.from('viajes').select('*', { count: 'exact', head: true });
 
-    setUserCount(users || 0);
-    setVehicleCount(vehicles || 0);
-    setRouteCount(routes || 0);
-    setTripCount(trips || 0);
+    setCantidadUsuarios(usuarios || 0);
+    setCantidadVehiculos(vehiculos || 0);
+    setCantidadRutas(rutas || 0);
+    setCantidadViajes(viajes || 0);
   };
 
-  const handleResolveAlert = async (alertId: number) => {
+  const resolverAlerta = async (alertaId: number) => {
     const { error } = await supabase
-      .from('alerts')
-      .update({ status: 'RESOLVED', resolved_at: new Date().toISOString() })
-      .eq('id', alertId);
+      .from('alertas')
+      .update({ estado: 'RESUELTO', resuelto_en: new Date().toISOString() })
+      .eq('id', alertaId);
     
     if (!error) {
-      alert('Alerta marcada como resuelta');
-      loadAlerts();
-    } else {
-      alert('Error actualizando alerta: ' + error.message);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      cargarAlertas();
     }
   };
 
-  const handleLogout = async () => {
+  const manejarCierreSesion = async () => {
     await AuthService.logout();
     navigation.replace('Login');
   };
 
-  const formatMoney = (amount: number) => {
-    return `Bs. ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  const formatearDinero = (monto: number) => {
+    return `Bs. ${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
+  const manejarRefresco = async () => {
+    setRefrescando(true);
+    await cargarDatosPanel();
+    setRefrescando(false);
   };
 
   // CRUD helpers
-  const openManagementModal = async (type: 'users' | 'vehicles' | 'routes' | 'trips') => {
-    setMgmtType(type);
-    setShowAddForm(false);
+  const abrirModalGestion = async (tipo: 'usuarios' | 'vehiculos' | 'rutas' | 'viajes') => {
+    setTipoGestion(tipo);
+    setMostrarFormularioAgregar(false);
     try {
-      const { data } = await supabase.from(type).select('*').order('id', { ascending: false });
-      if (data) setMgmtList(data);
-      setShowMgmtModal(true);
+      const { data } = await supabase.from(tipo).select('*').order('id', { ascending: false });
+      if (data) setListaGestion(data);
+      setMostrarModalGestion(true);
     } catch (e: any) {
-      alert('Error: ' + e.message);
+      console.error(e);
     }
   };
 
-  const handleAddUser = async () => {
-    if (!newUsername || !newPassword || !newFullName) {
-      alert('Complete los campos obligatorios');
+  const agregarUsuario = async () => {
+    if (!nuevoNombreUsuario || !nuevaContrasena || !nuevoNombreCompleto) {
       return;
     }
-    const { error } = await supabase.from('users').insert({
-      username: newUsername,
-      password: newPassword,
-      full_name: newFullName,
-      ci: newCI,
-      phone: newPhone,
-      role: newRole,
-      is_active: true
+    const { error } = await supabase.from('usuarios').insert({
+      nombre_usuario: nuevoNombreUsuario,
+      contrasena: nuevaContrasena,
+      nombre_completo: nuevoNombreCompleto,
+      ci: nuevoCI,
+      telefono: nuevoTelefono,
+      rol: nuevoRol,
+      activo: true
     });
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      setNewUsername('');
-      setNewPassword('');
-      setNewFullName('');
-      setNewCI('');
-      setNewPhone('');
-      setShowAddForm(false);
-      openManagementModal('users');
-      loadSystemCounts();
+    if (!error) {
+      setNuevoNombreUsuario('');
+      setNuevaContrasena('');
+      setNuevoNombreCompleto('');
+      setNuevoCI('');
+      setNuevoTelefono('');
+      setMostrarFormularioAgregar(false);
+      abrirModalGestion('usuarios');
+      cargarContadoresSistema();
     }
   };
 
-  const handleDeleteUser = async (id: number) => {
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      openManagementModal('users');
-      loadSystemCounts();
+  const borrarUsuario = async (id: number) => {
+    const { error } = await supabase.from('usuarios').delete().eq('id', id);
+    if (!error) {
+      abrirModalGestion('usuarios');
+      cargarContadoresSistema();
     }
   };
 
-  const handleAddVehicle = async () => {
-    if (!newPlate || !newCapacity) {
-      alert('Complete los campos obligatorios');
+  const agregarVehiculo = async () => {
+    if (!nuevaPlaca || !nuevaCapacidad) {
       return;
     }
-    const { error } = await supabase.from('vehicles').insert({
-      plate: newPlate,
-      model: newModel,
-      year: parseInt(newYear) || 2020,
-      capacity: parseInt(newCapacity),
-      owner_id: parseInt(newOwnerId) || null,
-      status: 'ACTIVE'
+    const { error } = await supabase.from('vehiculos').insert({
+      placa: nuevaPlaca,
+      modelo: nuevoModelo,
+      gestion: parseInt(nuevaGestion) || 2020,
+      capacidad: parseInt(nuevaCapacidad),
+      propietario_id: parseInt(nuevoPropietarioId) || null,
+      estado: 'ACTIVO'
     });
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      setNewPlate('');
-      setNewModel('');
-      setNewYear('');
-      setNewCapacity('18');
-      setNewOwnerId('');
-      setShowAddForm(false);
-      openManagementModal('vehicles');
-      loadSystemCounts();
+    if (!error) {
+      setNuevaPlaca('');
+      setNuevoModelo('');
+      setNuevaGestion('');
+      setNuevaCapacidad('18');
+      setNuevoPropietarioId('');
+      setMostrarFormularioAgregar(false);
+      abrirModalGestion('vehiculos');
+      cargarContadoresSistema();
     }
   };
 
-  const handleDeleteVehicle = async (id: number) => {
-    const { error } = await supabase.from('vehicles').delete().eq('id', id);
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      openManagementModal('vehicles');
-      loadSystemCounts();
+  const borrarVehiculo = async (id: number) => {
+    const { error } = await supabase.from('vehiculos').delete().eq('id', id);
+    if (!error) {
+      abrirModalGestion('vehiculos');
+      cargarContadoresSistema();
     }
   };
 
-  const handleAddRoute = async () => {
-    if (!newRouteName || !newOrigin || !newDest) {
-      alert('Complete los campos obligatorios');
+  const agregarRuta = async () => {
+    if (!nuevoNombreRuta || !nuevoOrigen || !nuevoDestino) {
       return;
     }
-    const { error } = await supabase.from('routes').insert({
-      name: newRouteName,
-      origin: newOrigin,
-      destination: newDest,
-      estimated_minutes: parseInt(newDuration) || 180
+    const { error } = await supabase.from('rutas').insert({
+      nombre: nuevoNombreRuta,
+      origen: nuevoOrigen,
+      destino: nuevoDestino,
+      minutos_estimados: parseInt(nuevaDuracion) || 180
     });
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      setNewRouteName('');
-      setNewOrigin('');
-      setNewDest('');
-      setNewDuration('180');
-      setShowAddForm(false);
-      openManagementModal('routes');
-      loadSystemCounts();
+    if (!error) {
+      setNuevoNombreRuta('');
+      setNuevoOrigen('');
+      setNuevoDestino('');
+      setNuevaDuracion('180');
+      setMostrarFormularioAgregar(false);
+      abrirModalGestion('rutas');
+      cargarContadoresSistema();
     }
   };
 
-  const handleDeleteRoute = async (id: number) => {
-    const { error } = await supabase.from('routes').delete().eq('id', id);
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      openManagementModal('routes');
-      loadSystemCounts();
+  const borrarRuta = async (id: number) => {
+    const { error } = await supabase.from('rutas').delete().eq('id', id);
+    if (!error) {
+      abrirModalGestion('rutas');
+      cargarContadoresSistema();
     }
   };
 
-  const handleAddTrip = async () => {
-    if (!newTripRouteId || !newTripVehicleId || !newTripDriverId) {
-      alert('Complete los campos obligatorios');
+  const agregarViaje = async () => {
+    if (!nuevoViajeRutaId || !nuevoViajeVehiculoId || !nuevoViajeChoferId) {
       return;
     }
-    const { error } = await supabase.from('trips').insert({
-      route_id: parseInt(newTripRouteId),
-      vehicle_id: parseInt(newTripVehicleId),
-      driver_id: parseInt(newTripDriverId),
-      departure_time: newTripTime,
-      status: 'SCHEDULED'
+    const { error } = await supabase.from('viajes').insert({
+      ruta_id: parseInt(nuevoViajeRutaId),
+      vehiculo_id: parseInt(nuevoViajeVehiculoId),
+      chofer_id: parseInt(nuevoViajeChoferId),
+      hora_salida: nuevoViajeHora,
+      estado: 'PROGRAMADO'
     });
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      setNewTripRouteId('');
-      setNewTripVehicleId('');
-      setNewTripDriverId('');
-      setNewTripTime('14:00');
-      setShowAddForm(false);
-      openManagementModal('trips');
-      loadSystemCounts();
+    if (!error) {
+      setNuevoViajeRutaId('');
+      setNuevoViajeVehiculoId('');
+      setNuevoViajeChoferId('');
+      setNuevoViajeHora('14:00');
+      setMostrarFormularioAgregar(false);
+      abrirModalGestion('viajes');
+      cargarContadoresSistema();
     }
   };
 
-  const handleDeleteTrip = async (id: number) => {
-    const { error } = await supabase.from('trips').delete().eq('id', id);
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      openManagementModal('trips');
-      loadSystemCounts();
+  const borrarViaje = async (id: number) => {
+    const { error } = await supabase.from('viajes').delete().eq('id', id);
+    if (!error) {
+      abrirModalGestion('viajes');
+      cargarContadoresSistema();
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={estilos.contenedor}>
+      <View style={estilos.header}>
         <View>
-          <Text style={styles.headerTitle}>Panel de Control</Text>
-          <Text style={styles.headerSubtitle}>
-            {currentUser ? currentUser.full_name : 'Administrador'}
+          <Text style={estilos.headerTitle}>Panel de Control</Text>
+          <Text style={estilos.headerSubtitle}>
+            {usuarioActual ? usuarioActual.nombre_completo : 'Administrador'}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <AnimatedPressable style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
+          <AnimatedPressable style={estilos.iconButton} onPress={() => navigation.navigate('Chat')}>
             <Ionicons name="chatbubbles-outline" size={22} color={colors.primary} />
           </AnimatedPressable>
-          <AnimatedPressable style={styles.iconButton} onPress={onRefresh}>
+          <AnimatedPressable style={estilos.iconButton} onPress={manejarRefresco}>
             <Ionicons name="refresh" size={22} color={colors.primary} />
           </AnimatedPressable>
-          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
+          <AnimatedPressable style={estilos.iconButton} onPress={manejarCierreSesion}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           </AnimatedPressable>
         </View>
       </View>
 
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={estilos.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          <RefreshControl refreshing={refrescando} onRefresh={manejarRefresco} colors={[colors.primary]} />
         }
       >
-        <Text style={styles.sectionTitle}>Resumen Financiero Global</Text>
-        <View style={styles.kpiContainer}>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Ingresos Totales</Text>
-            <Text style={styles.kpiValue}>{formatMoney(totalIncome)}</Text>
+        <Text style={estilos.sectionTitle}>Resumen Financiero Global</Text>
+        <View style={estilos.kpiContainer}>
+          <View style={estilos.kpiCard}>
+            <Text style={estilos.kpiLabel}>Ingresos Totales</Text>
+            <Text style={estilos.kpiValue}>{formatearDinero(ingresoTotal)}</Text>
           </View>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Egresos Globales</Text>
-            <Text style={[styles.kpiValue, { color: colors.danger }]}>
-              - {formatMoney(totalExpense)}
+          <View style={estilos.kpiCard}>
+            <Text style={estilos.kpiLabel}>Egresos Globales</Text>
+            <Text style={[estilos.kpiValue, { color: colors.danger }]}>
+              - {formatearDinero(egresoTotal)}
             </Text>
           </View>
         </View>
 
-        <View style={[styles.kpiCard, { alignItems: 'center', marginBottom: 24 }]}>
-          <Text style={styles.kpiLabel}>Utilidad Neto Global</Text>
-          <Text style={[styles.kpiValue, { color: totalIncome - totalExpense >= 0 ? colors.success : colors.danger, fontSize: 32 }]}>
-            {formatMoney(totalIncome - totalExpense)}
+        <View style={[estilos.kpiCard, { alignItems: 'center', marginBottom: 24 }]}>
+          <Text style={estilos.kpiLabel}>Utilidad Neta Global</Text>
+          <Text style={[estilos.kpiValue, { color: ingresoTotal - egresoTotal >= 0 ? colors.success : colors.danger, fontSize: 32 }]}>
+            {formatearDinero(ingresoTotal - egresoTotal)}
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Módulos de Gestión</Text>
-        <View style={styles.grid}>
-          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('users')}>
+        <Text style={estilos.sectionTitle}>Módulos de Gestión</Text>
+        <View style={estilos.grid}>
+          <AnimatedPressable style={estilos.gridCard} onPress={() => abrirModalGestion('usuarios')}>
             <Ionicons name="people-outline" size={32} color={colors.primary} />
-            <Text style={styles.gridTitle}>Usuarios</Text>
-            <Text style={styles.gridCount}>{userCount} Registros</Text>
+            <Text style={estilos.gridTitle}>Usuarios</Text>
+            <Text style={estilos.gridCount}>{cantidadUsuarios} Registros</Text>
           </AnimatedPressable>
 
-          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('vehicles')}>
+          <AnimatedPressable style={estilos.gridCard} onPress={() => abrirModalGestion('vehiculos')}>
             <Ionicons name="bus-outline" size={32} color={colors.primary} />
-            <Text style={styles.gridTitle}>Flota (Vehículos)</Text>
-            <Text style={styles.gridCount}>{vehicleCount} Unidades</Text>
+            <Text style={estilos.gridTitle}>Flota (Vehículos)</Text>
+            <Text style={estilos.gridCount}>{cantidadVehiculos} Unidades</Text>
           </AnimatedPressable>
 
-          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('routes')}>
+          <AnimatedPressable style={estilos.gridCard} onPress={() => abrirModalGestion('rutas')}>
             <Ionicons name="map-outline" size={32} color={colors.primary} />
-            <Text style={styles.gridTitle}>Rutas y Precios</Text>
-            <Text style={styles.gridCount}>{routeCount} Rutas</Text>
+            <Text style={estilos.gridTitle}>Rutas y Precios</Text>
+            <Text style={estilos.gridCount}>{cantidadRutas} Rutas</Text>
           </AnimatedPressable>
 
-          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('trips')}>
+          <AnimatedPressable style={estilos.gridCard} onPress={() => abrirModalGestion('viajes')}>
             <Ionicons name="calendar-outline" size={32} color={colors.primary} />
-            <Text style={styles.gridTitle}>Viajes del Día</Text>
-            <Text style={styles.gridCount}>{tripCount} Salidas</Text>
+            <Text style={estilos.gridTitle}>Viajes del Día</Text>
+            <Text style={estilos.gridCount}>{cantidadViajes} Salidas</Text>
           </AnimatedPressable>
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Alertas e Incidentes en Ruta</Text>
-        {alerts.length === 0 ? (
-          <View style={styles.emptyCard}>
+        <Text style={[estilos.sectionTitle, { marginTop: 24 }]}>Alertas e Incidentes en Ruta</Text>
+        {alertas.length === 0 ? (
+          <View style={estilos.emptyCard}>
             <Ionicons name="checkmark-circle-outline" size={40} color={colors.success} />
-            <Text style={styles.emptyText}>No hay incidentes activos en las rutas hoy</Text>
+            <Text style={estilos.emptyText}>No hay incidentes activos en las rutas hoy</Text>
           </View>
         ) : (
-          alerts.map((alertItem) => (
-            <View key={alertItem.id} style={styles.alertCard}>
+          alertas.map((alertaItem) => (
+            <View key={alertaItem.id} style={estilos.alertCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.alertTitle}>
-                  🚨 Alerta: {alertItem.alert_type === 'ROAD_BLOCK' ? 'Bloqueo' : alertItem.alert_type}
+                <Text style={estilos.alertTitle}>
+                  🚨 Alerta: {alertaItem.tipo_alerta === 'BLOQUEO' ? 'Bloqueo' : alertaItem.tipo_alerta}
                 </Text>
-                <Text style={styles.alertDesc}>{alertItem.description}</Text>
-                <Text style={styles.alertMeta}>
-                  Vehículo: {alertItem.vehicle?.plate} | Reporta: {alertItem.driver?.full_name}
+                <Text style={estilos.alertDesc}>{alertaItem.descripcion}</Text>
+                <Text style={estilos.alertMeta}>
+                  Vehículo: {alertaItem.vehiculo?.placa} | Reporta: {alertaItem.chofer?.nombre_completo}
                 </Text>
               </View>
               <AnimatedPressable 
-                style={styles.resolveBtn}
-                onPress={() => handleResolveAlert(alertItem.id)}
+                style={estilos.resolveBtn}
+                onPress={() => resolverAlerta(alertaItem.id)}
               >
-                <Text style={styles.resolveBtnText}>Resolver</Text>
+                <Text style={estilos.resolveBtnText}>Resolver</Text>
               </AnimatedPressable>
             </View>
           ))
@@ -452,112 +431,124 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
       </ScrollView>
 
       {/* CRUD MODAL */}
-      <Modal visible={showMgmtModal} animationType="slide" onRequestClose={() => setShowMgmtModal(false)}>
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              Gestión: {mgmtType === 'users' ? 'Usuarios' :
-                       mgmtType === 'vehicles' ? 'Vehículos' :
-                       mgmtType === 'routes' ? 'Rutas' : 'Viajes'}
+      <Modal visible={mostrarModalGestion} animationType="slide" onRequestClose={() => setMostrarModalGestion(false)}>
+        <SafeAreaView style={estilos.modalContainer}>
+          <View style={estilos.modalHeader}>
+            <Text style={estilos.modalTitle}>
+              Gestión: {tipoGestion === 'usuarios' ? 'Usuarios' :
+                       tipoGestion === 'vehiculos' ? 'Vehículos' :
+                       tipoGestion === 'rutas' ? 'Rutas' : 'Viajes'}
             </Text>
-            <AnimatedPressable onPress={() => setShowMgmtModal(false)} style={{ padding: 4 }}>
+            <AnimatedPressable onPress={() => setMostrarModalGestion(false)} style={{ padding: 4 }}>
               <Ionicons name="close" size={28} color={colors.text} />
             </AnimatedPressable>
           </View>
 
           <ScrollView style={{ flex: 1, padding: 16 }}>
             <AnimatedPressable 
-              style={[styles.addBtn, { marginBottom: 16 }]} 
-              onPress={() => setShowAddForm(!showAddForm)}
+              style={[estilos.addBtn, { marginBottom: 16 }]} 
+              onPress={() => setMostrarFormularioAgregar(!mostrarFormularioAgregar)}
             >
-              <Text style={styles.addBtnText}>{showAddForm ? 'Cerrar Formulario' : 'Agregar Nuevo Registro'}</Text>
+              <Text style={estilos.addBtnText}>{mostrarFormularioAgregar ? 'Cerrar Formulario' : 'Agregar Nuevo Registro'}</Text>
             </AnimatedPressable>
 
-            {showAddForm && (
-              <View style={[styles.card, { marginBottom: 20 }]}>
-                <Text style={styles.sectionTitle}>Nuevo Registro</Text>
+            {mostrarFormularioAgregar && (
+              <View style={[estilos.card, { marginBottom: 20 }]}>
+                <Text style={estilos.sectionTitle}>Nuevo Registro</Text>
 
-                {mgmtType === 'users' && (
+                {tipoGestion === 'usuarios' && (
                   <View>
-                    <TextInput style={styles.modalInput} placeholder="Usuario (Login)" value={newUsername} onChangeText={setNewUsername} />
-                    <TextInput style={styles.modalInput} placeholder="Contraseña" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
-                    <TextInput style={styles.modalInput} placeholder="Nombre Completo" value={newFullName} onChangeText={setNewFullName} />
-                    <TextInput style={styles.modalInput} placeholder="CI" value={newCI} onChangeText={setNewCI} />
-                    <TextInput style={styles.modalInput} placeholder="Teléfono" value={newPhone} onChangeText={setNewPhone} />
-                    <TextInput style={styles.modalInput} placeholder="Rol (ADMIN, SECRETARY, DRIVER, SOCIO)" value={newRole} onChangeText={setNewRole} autoCapitalize="characters" />
-                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddUser}>
-                      <Text style={styles.submitBtnText}>Guardar Usuario</Text>
+                    <TextInput style={estilos.modalInput} placeholder="Usuario (Login)" value={nuevoNombreUsuario} onChangeText={setNuevoNombreUsuario} />
+                    <TextInput style={estilos.modalInput} placeholder="Contraseña" value={nuevaContrasena} onChangeText={setNuevaContrasena} secureTextEntry />
+                    <TextInput style={estilos.modalInput} placeholder="Nombre Completo" value={nuevoNombreCompleto} onChangeText={setNuevoNombreCompleto} />
+                    <TextInput style={estilos.modalInput} placeholder="CI" value={nuevoCI} onChangeText={setNuevoCI} />
+                    <TextInput style={estilos.modalInput} placeholder="Teléfono" value={nuevoTelefono} onChangeText={setNuevoTelefono} />
+                    
+                    <Text style={[estilos.sectionTitle, { fontSize: 14, marginBottom: 8, marginTop: 4 }]}>Rol de Usuario</Text>
+                    <View style={{ marginBottom: 16 }}>
+                      <SegmentedControl
+                        segments={['Admin', 'Secretaria', 'Chofer', 'Socio']}
+                        selectedIndex={['ADMINISTRADOR', 'SECRETARIA', 'CHOFER', 'SOCIO'].indexOf(nuevoRol)}
+                        onChange={(index) => {
+                          const rolesMapeados = ['ADMINISTRADOR', 'SECRETARIA', 'CHOFER', 'SOCIO'];
+                          setNuevoRol(rolesMapeados[index]);
+                        }}
+                      />
+                    </View>
+
+                    <AnimatedPressable style={estilos.submitBtn} onPress={agregarUsuario}>
+                      <Text style={estilos.submitBtnText}>Guardar Usuario</Text>
                     </AnimatedPressable>
                   </View>
                 )}
 
-                {mgmtType === 'vehicles' && (
+                {tipoGestion === 'vehiculos' && (
                   <View>
-                    <TextInput style={styles.modalInput} placeholder="Placa (ej: 2314-HBG)" value={newPlate} onChangeText={setNewPlate} />
-                    <TextInput style={styles.modalInput} placeholder="Modelo (ej: Toyota HiAce)" value={newModel} onChangeText={setNewModel} />
-                    <TextInput style={styles.modalInput} placeholder="Año (ej: 2020)" value={newYear} onChangeText={setNewYear} keyboardType="numeric" />
-                    <TextInput style={styles.modalInput} placeholder="Capacidad (Asientos)" value={newCapacity} onChangeText={setNewCapacity} keyboardType="numeric" />
-                    <TextInput style={styles.modalInput} placeholder="ID Socio Propietario" value={newOwnerId} onChangeText={setNewOwnerId} keyboardType="numeric" />
-                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddVehicle}>
-                      <Text style={styles.submitBtnText}>Guardar Vehículo</Text>
+                    <TextInput style={estilos.modalInput} placeholder="Placa (ej: 2314-HBG)" value={nuevaPlaca} onChangeText={setNuevaPlaca} />
+                    <TextInput style={estilos.modalInput} placeholder="Modelo (ej: Toyota HiAce)" value={nuevoModelo} onChangeText={setNuevoModelo} />
+                    <TextInput style={estilos.modalInput} placeholder="Gestión (ej: 2020)" value={nuevaGestion} onChangeText={setNuevaGestion} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="Capacidad (Asientos)" value={nuevaCapacidad} onChangeText={setNuevaCapacidad} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="ID Socio Propietario" value={nuevoPropietarioId} onChangeText={setNuevoPropietarioId} keyboardType="numeric" />
+                    <AnimatedPressable style={estilos.submitBtn} onPress={agregarVehiculo}>
+                      <Text style={estilos.submitBtnText}>Guardar Vehículo</Text>
                     </AnimatedPressable>
                   </View>
                 )}
 
-                {mgmtType === 'routes' && (
+                {tipoGestion === 'rutas' && (
                   <View>
-                    <TextInput style={styles.modalInput} placeholder="Nombre Ruta (ej: Uyuni - Potosi)" value={newRouteName} onChangeText={setNewRouteName} />
-                    <TextInput style={styles.modalInput} placeholder="Origen (ej: Uyuni)" value={newOrigin} onChangeText={setNewOrigin} />
-                    <TextInput style={styles.modalInput} placeholder="Destino (ej: Potosi)" value={newDest} onChangeText={setNewDest} />
-                    <TextInput style={styles.modalInput} placeholder="Duración Estimada (Minutos)" value={newDuration} onChangeText={setNewDuration} keyboardType="numeric" />
-                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddRoute}>
-                      <Text style={styles.submitBtnText}>Guardar Ruta</Text>
+                    <TextInput style={estilos.modalInput} placeholder="Nombre Ruta (ej: Uyuni - Potosi)" value={nuevoNombreRuta} onChangeText={setNuevoNombreRuta} />
+                    <TextInput style={estilos.modalInput} placeholder="Origen (ej: Uyuni)" value={nuevoOrigen} onChangeText={setNuevoOrigen} />
+                    <TextInput style={estilos.modalInput} placeholder="Destino (ej: Potosi)" value={nuevoDestino} onChangeText={setNuevoDestino} />
+                    <TextInput style={estilos.modalInput} placeholder="Duración Estimada (Minutos)" value={nuevaDuracion} onChangeText={setNuevaDuracion} keyboardType="numeric" />
+                    <AnimatedPressable style={estilos.submitBtn} onPress={agregarRuta}>
+                      <Text style={estilos.submitBtnText}>Guardar Ruta</Text>
                     </AnimatedPressable>
                   </View>
                 )}
 
-                {mgmtType === 'trips' && (
+                {tipoGestion === 'viajes' && (
                   <View>
-                    <TextInput style={styles.modalInput} placeholder="ID de la Ruta" value={newTripRouteId} onChangeText={setNewTripRouteId} keyboardType="numeric" />
-                    <TextInput style={styles.modalInput} placeholder="ID del Vehículo" value={newTripVehicleId} onChangeText={setNewTripVehicleId} keyboardType="numeric" />
-                    <TextInput style={styles.modalInput} placeholder="ID del Chofer" value={newTripDriverId} onChangeText={setNewTripDriverId} keyboardType="numeric" />
-                    <TextInput style={styles.modalInput} placeholder="Hora Salida (ej: 14:30)" value={newTripTime} onChangeText={setNewTripTime} />
-                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddTrip}>
-                      <Text style={styles.submitBtnText}>Programar Viaje</Text>
+                    <TextInput style={estilos.modalInput} placeholder="ID de la Ruta" value={nuevoViajeRutaId} onChangeText={setNuevoViajeRutaId} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="ID del Vehículo" value={nuevoViajeVehiculoId} onChangeText={setNuevoViajeVehiculoId} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="ID del Chofer" value={nuevoViajeChoferId} onChangeText={setNuevoViajeChoferId} keyboardType="numeric" />
+                    <TextInput style={estilos.modalInput} placeholder="Hora Salida (ej: 14:30)" value={nuevoViajeHora} onChangeText={setNuevoViajeHora} />
+                    <AnimatedPressable style={estilos.submitBtn} onPress={agregarViaje}>
+                      <Text style={estilos.submitBtnText}>Programar Viaje</Text>
                     </AnimatedPressable>
                   </View>
                 )}
               </View>
             )}
 
-            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Registros Existentes</Text>
-            {mgmtList.map((item) => (
-              <View key={item.id} style={styles.alertCard}>
+            <Text style={[estilos.sectionTitle, { marginBottom: 12 }]}>Registros Existentes</Text>
+            {listaGestion.map((item) => (
+              <View key={item.id} style={estilos.alertCard}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.alertTitle}>ID: #{item.id}</Text>
-                  {mgmtType === 'users' && (
-                    <Text style={styles.alertDesc}>{item.full_name} ({item.role}) - Log: {item.username}</Text>
+                  <Text style={estilos.alertTitle}>ID: #{item.id}</Text>
+                  {tipoGestion === 'usuarios' && (
+                    <Text style={estilos.alertDesc}>{item.nombre_completo} ({item.rol}) - Log: {item.nombre_usuario}</Text>
                   )}
-                  {mgmtType === 'vehicles' && (
-                    <Text style={styles.alertDesc}>{item.plate} - {item.model} ({item.capacity} as.)</Text>
+                  {tipoGestion === 'vehiculos' && (
+                    <Text style={estilos.alertDesc}>{item.placa} - {item.modelo} ({item.capacidad} as.)</Text>
                   )}
-                  {mgmtType === 'routes' && (
-                    <Text style={styles.alertDesc}>{item.name} - {item.estimated_minutes} min.</Text>
+                  {tipoGestion === 'rutas' && (
+                    <Text style={estilos.alertDesc}>{item.nombre} - {item.minutos_estimados} min.</Text>
                   )}
-                  {mgmtType === 'trips' && (
-                    <Text style={styles.alertDesc}>Ruta ID: {item.route_id} - Salida: {item.departure_time} - {item.status}</Text>
+                  {tipoGestion === 'viajes' && (
+                    <Text style={estilos.alertDesc}>Ruta ID: {item.ruta_id} - Salida: {item.hora_salida} - {item.estado}</Text>
                   )}
                 </View>
                 <AnimatedPressable 
-                  style={[styles.resolveBtn, { backgroundColor: colors.danger }]}
+                  style={[estilos.resolveBtn, { backgroundColor: colors.danger }]}
                   onPress={() => {
-                    if (mgmtType === 'users') handleDeleteUser(item.id);
-                    if (mgmtType === 'vehicles') handleDeleteVehicle(item.id);
-                    if (mgmtType === 'routes') handleDeleteRoute(item.id);
-                    if (mgmtType === 'trips') handleDeleteTrip(item.id);
+                    if (tipoGestion === 'usuarios') borrarUsuario(item.id);
+                    if (tipoGestion === 'vehiculos') borrarVehiculo(item.id);
+                    if (tipoGestion === 'rutas') borrarRuta(item.id);
+                    if (tipoGestion === 'viajes') borrarViaje(item.id);
                   }}
                 >
-                  <Text style={styles.resolveBtnText}>Borrar</Text>
+                  <Text style={estilos.resolveBtnText}>Borrar</Text>
                 </AnimatedPressable>
               </View>
             ))}
@@ -568,8 +559,8 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   headerTitle: { ...typography.title2, color: colors.text },
   headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },

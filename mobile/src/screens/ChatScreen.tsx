@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -7,205 +7,215 @@ import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
 import { AuthService } from '../services/AuthService';
 import AnimatedPressable from '../components/AnimatedPressable';
-import { User } from '../types';
+import { Usuario } from '../types';
 
-export interface ChatScreenProps {
+export interface PropiedadesPantallaChat {
   navigation: any;
 }
 
-export interface MessageSender {
-  full_name: string;
-  role: string;
+export interface RemitenteMensaje {
+  nombre_completo: string;
+  rol: string;
 }
 
-export interface ChatMessage {
+export interface MensajeChat {
   id: number;
-  channel: 'GENERAL' | 'OPERATIONS' | string;
-  sender_id: number;
-  content: string;
-  created_at: string;
-  sender?: MessageSender;
+  canal: 'GENERAL' | 'OPERACIONES' | string;
+  remitente_id: number;
+  contenido: string;
+  creado_en: string;
+  remitente?: RemitenteMensaje;
 }
 
-export default function ChatScreen({ navigation }: ChatScreenProps) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeChannel, setActiveChannel] = useState<'GENERAL' | 'OPERATIONS'>('GENERAL'); // 'GENERAL' | 'OPERATIONS'
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+export default function ChatScreen({ navigation }: PropiedadesPantallaChat) {
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [canalActivo, setCanalActivo] = useState<'GENERAL' | 'OPERACIONES'>('GENERAL');
+  const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
+  const [nuevoMensaje, setNuevoMensaje] = useState<string>('');
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [refrescando, setRefrescando] = useState<boolean>(false);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const vistaScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    loadUserAndMessages();
+    cargarUsuarioYMensajes();
     
     // Suscripción en Tiempo Real usando WebSockets de Supabase
-    const channelName = `realtime_chat_${activeChannel.toLowerCase()}`;
-    const subscription = supabase
-      .channel(channelName)
+    const nombreCanal = `realtime_chat_${canalActivo.toLowerCase()}`;
+    const suscripcion = supabase
+      .channel(nombreCanal)
       .on(
         'postgres_changes',
         { 
           event: 'INSERT', 
           schema: 'public', 
-          table: 'messages', 
-          filter: `channel=eq.${activeChannel}` 
+          table: 'mensajes', 
+          filter: `canal=eq.${canalActivo}` 
         },
         async () => {
           // Recargar mensajes al recibir uno nuevo instantáneamente
-          fetchMessages(activeChannel, false);
+          obtenerMensajes(canalActivo, false);
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(suscripcion);
     };
-  }, [activeChannel]);
+  }, [canalActivo]);
 
-  const loadUserAndMessages = async () => {
-    setLoading(true);
-    const user = await AuthService.getCurrentUser();
-    setCurrentUser(user);
-    // If user is DRIVER, default to OPERATIONS channel
-    if (user && user.role === 'DRIVER') {
-      setActiveChannel('OPERATIONS');
+  const cargarUsuarioYMensajes = async () => {
+    setCargando(true);
+    const usuario = await AuthService.getCurrentUser();
+    setUsuarioActual(usuario);
+    // Si es chofer, abrir por defecto operaciones
+    if (usuario && usuario.rol === 'CHOFER') {
+      setCanalActivo('OPERACIONES');
     }
-    await fetchMessages(activeChannel === 'GENERAL' ? 'GENERAL' : 'OPERATIONS', true);
-    setLoading(false);
+    await obtenerMensajes(canalActivo === 'GENERAL' ? 'GENERAL' : 'OPERACIONES', true);
+    setCargando(false);
   };
 
-  const fetchMessages = async (channel: 'GENERAL' | 'OPERATIONS', showLoading = false) => {
-    if (showLoading) setLoading(true);
+  const obtenerMensajes = async (canal: 'GENERAL' | 'OPERACIONES', mostrarCargando = false) => {
+    if (mostrarCargando) setCargando(true);
     try {
       const { data, error } = await supabase
-        .from('messages')
-        .select('*, sender:users(full_name, role)')
-        .eq('channel', channel)
-        .order('created_at', { ascending: true });
-      
+        .from('mensajes')
+        .select(`
+          *,
+          remitente:usuarios(nombre_completo, rol)
+        `)
+        .eq('canal', canal)
+        .order('creado_en', { ascending: true });
+
       if (error) throw error;
-      if (data) setMessages(data as ChatMessage[]);
+      if (data) setMensajes(data as MensajeChat[]);
+      
+      // Desplazarse al final
+      setTimeout(() => {
+        vistaScrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (e: any) {
-      console.error('Error cargando chat:', e.message);
+      console.error(e.message);
     } finally {
-      if (showLoading) setLoading(false);
+      if (mostrarCargando) setCargando(false);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchMessages(activeChannel, false);
-    setRefreshing(false);
-  };
+  const enviarMensaje = async () => {
+    if (!nuevoMensaje.trim() || !usuarioActual) return;
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !currentUser) return;
-
-    const messageText = newMessage;
-    setNewMessage(''); // clear input instantly
+    const contenidoMensaje = nuevoMensaje.trim();
+    setNuevoMensaje('');
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        channel: activeChannel,
-        sender_id: currentUser.id,
-        content: messageText
-      });
+      const { error } = await supabase
+        .from('mensajes')
+        .insert({
+          canal: canalActivo,
+          remitente_id: usuarioActual.id,
+          contenido: contenidoMensaje
+        });
 
       if (error) throw error;
+
+      // Recargar mensajes inmediatamente
+      await obtenerMensajes(canalActivo, false);
       
-      // Reload messages list
-      await fetchMessages(activeChannel, false);
-      
-      // Scroll to bottom
+      // Desplazarse al final
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        vistaScrollRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (e: any) {
       alert('Error enviando mensaje: ' + e.message);
     }
   };
 
+  const alRefrescar = async () => {
+    setRefrescando(true);
+    await obtenerMensajes(canalActivo, false);
+    setRefrescando(false);
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={estilos.contenedor}>
       {/* Header */}
-      <View style={styles.header}>
-        <AnimatedPressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+      <View style={estilos.header}>
+        <AnimatedPressable style={estilos.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
-          <Text style={styles.backBtnText}>Volver</Text>
+          <Text style={estilos.backBtnText}>Volver</Text>
         </AnimatedPressable>
-        <Text style={styles.headerTitle}>Chat Sindical</Text>
+        <Text style={estilos.headerTitle}>Chat Sindical</Text>
         <View style={{ width: 60 }} />
       </View>
 
       {/* Channel Toggles */}
-      <View style={styles.channelBar}>
+      <View style={estilos.channelBar}>
         <AnimatedPressable 
-          style={[styles.channelTab, activeChannel === 'GENERAL' && styles.channelTabActive]}
-          onPress={() => setActiveChannel('GENERAL')}
+          style={[estilos.channelTab, canalActivo === 'GENERAL' && estilos.channelTabActive]}
+          onPress={() => setCanalActivo('GENERAL')}
         >
-          <Ionicons name="people-outline" size={18} color={activeChannel === 'GENERAL' ? colors.primary : colors.textSecondary} />
-          <Text style={[styles.channelTabText, activeChannel === 'GENERAL' && styles.channelTabTextActive]}>General</Text>
+          <Ionicons name="people-outline" size={18} color={canalActivo === 'GENERAL' ? colors.primary : colors.textSecondary} />
+          <Text style={[estilos.channelTabText, canalActivo === 'GENERAL' && estilos.channelTabTextActive]}>General</Text>
         </AnimatedPressable>
 
         <AnimatedPressable 
-          style={[styles.channelTab, activeChannel === 'OPERATIONS' && styles.channelTabActive]}
-          onPress={() => setActiveChannel('OPERATIONS')}
+          style={[estilos.channelTab, canalActivo === 'OPERACIONES' && estilos.channelTabActive]}
+          onPress={() => setCanalActivo('OPERACIONES')}
         >
-          <Ionicons name="construct-outline" size={18} color={activeChannel === 'OPERATIONS' ? colors.primary : colors.textSecondary} />
-          <Text style={[styles.channelTabText, activeChannel === 'OPERATIONS' && styles.channelTabTextActive]}>Operaciones</Text>
+          <Ionicons name="construct-outline" size={18} color={canalActivo === 'OPERACIONES' ? colors.primary : colors.textSecondary} />
+          <Text style={[estilos.channelTabText, canalActivo === 'OPERACIONES' && estilos.channelTabTextActive]}>Operaciones</Text>
         </AnimatedPressable>
       </View>
 
       {/* Message List */}
-      {loading ? (
-        <View style={styles.centerContainer}>
+      {cargando ? (
+        <View style={estilos.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView
-          ref={scrollViewRef}
-          style={styles.messageScroll}
-          contentContainerStyle={styles.messageContent}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          ref={vistaScrollRef}
+          style={estilos.messageScroll}
+          contentContainerStyle={estilos.messageContent}
+          onContentSizeChange={() => vistaScrollRef.current?.scrollToEnd({ animated: true })}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+            <RefreshControl refreshing={refrescando} onRefresh={alRefrescar} colors={[colors.primary]} />
           }
         >
-          {messages.length === 0 ? (
-            <View style={styles.emptyContainer}>
+          {mensajes.length === 0 ? (
+            <View style={estilos.emptyContainer}>
               <Ionicons name="chatbubbles-outline" size={48} color={colors.textSecondary} />
-              <Text style={styles.emptyText}>Sin mensajes en este canal. ¡Envía el primero!</Text>
+              <Text style={estilos.emptyText}>Sin mensajes en este canal. ¡Envía el primero!</Text>
             </View>
           ) : (
-            messages.map((msg) => {
-              const isOwnMessage = currentUser && msg.sender_id === currentUser.id;
+            mensajes.map((msg) => {
+              const esMensajePropio = usuarioActual && msg.remitente_id === usuarioActual.id;
               return (
                 <View 
                   key={msg.id} 
                   style={[
-                    styles.messageBubbleContainer,
-                    isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
+                    estilos.messageBubbleContainer,
+                    esMensajePropio ? estilos.ownMessageContainer : estilos.otherMessageContainer
                   ]}
                 >
-                  {!isOwnMessage && (
-                    <Text style={styles.senderLabel}>
-                      {msg.sender?.full_name} • ({msg.sender?.role})
+                  {!esMensajePropio && (
+                    <Text style={estilos.senderLabel}>
+                      {msg.remitente?.nombre_completo} • ({msg.remitente?.rol})
                     </Text>
                   )}
                   <View 
                     style={[
-                      styles.messageBubble,
-                      isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble
+                      estilos.messageBubble,
+                      esMensajePropio ? estilos.ownMessageBubble : estilos.otherMessageBubble
                     ]}
                   >
-                    <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
-                      {msg.content}
+                    <Text style={[estilos.messageText, esMensajePropio && estilos.ownMessageText]}>
+                      {msg.contenido}
                     </Text>
                   </View>
-                  <Text style={styles.timestamp}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <Text style={estilos.timestamp}>
+                    {new Date(msg.creado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
               );
@@ -219,19 +229,19 @@ export default function ChatScreen({ navigation }: ChatScreenProps) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={styles.inputContainer}>
+        <View style={estilos.inputContainer}>
           <TextInput
-            style={styles.input}
-            placeholder={`Escribir en #${activeChannel.toLowerCase()}...`}
+            style={estilos.input}
+            placeholder={`Escribir en #${canalActivo.toLowerCase()}...`}
             placeholderTextColor={colors.textSecondary}
-            value={newMessage}
-            onChangeText={setNewMessage}
+            value={nuevoMensaje}
+            onChangeText={setNuevoMensaje}
             multiline
           />
           <AnimatedPressable 
-            style={[styles.sendBtn, !newMessage.trim() && styles.sendBtnDisabled]}
-            disabled={!newMessage.trim()}
-            onPress={handleSendMessage}
+            style={[estilos.sendBtn, !nuevoMensaje.trim() && estilos.sendBtnDisabled]}
+            disabled={!nuevoMensaje.trim()}
+            onPress={enviarMensaje}
           >
             <Ionicons name="send" size={20} color="#FFF" />
           </AnimatedPressable>
@@ -241,8 +251,8 @@ export default function ChatScreen({ navigation }: ChatScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backBtnText: { ...typography.body, color: colors.primary },
