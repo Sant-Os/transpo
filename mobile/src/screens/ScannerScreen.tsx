@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
+import AnimatedPressable from '../components/AnimatedPressable';
 
 export interface ScannerScreenProps {
   navigation: any;
@@ -66,9 +67,9 @@ export default function ScannerScreen({ navigation }: ScannerScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }}>
-           <Ionicons name="close" size={28} color={colors.text} />
-        </TouchableOpacity>
+        <AnimatedPressable onPress={() => navigation.goBack()} style={{ padding: 8 }}>
+           <Ionicons name="close" size={28} color="#FFF" />
+        </AnimatedPressable>
         <Text style={styles.headerTitle}>Escáner QR</Text>
         <View style={{ width: 44 }} />
       </View>
@@ -93,54 +94,12 @@ export default function ScannerScreen({ navigation }: ScannerScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h3,
-    color: colors.text,
-    fontFamily: typography.fontFamilyBold,
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scanFrame: {
-    width: 250,
-    height: 250,
-    borderWidth: 3,
-    borderColor: colors.primary,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-  },
-  overlayText: {
-    ...typography.caption,
-    color: '#FFF',
-    marginTop: 24,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
+  container: { flex: 1, backgroundColor: '#000' },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: 'rgba(0,0,0,0.7)' },
+  headerTitle: { ...typography.headline, color: '#FFF' },
+  camera: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  scanFrame: { width: 260, height: 260, borderWidth: 3, borderColor: colors.primary, borderRadius: 20, backgroundColor: 'transparent' },
+  overlayText: { ...typography.subhead, color: 'rgba(255,255,255,0.8)', marginTop: 24, textAlign: 'center', paddingHorizontal: 32 },
 });

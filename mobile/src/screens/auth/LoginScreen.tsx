@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { AuthService } from '../../services/AuthService';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import Toast from '../../components/Toast';
 
 export interface LoginScreenProps {
   navigation: any;
@@ -14,17 +18,48 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info' | 'warning'>('error');
+
+  // Animaciones de entrada
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        speed: 12,
+        bounciness: 4,
+      }),
+    ]).start();
+  }, []);
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setToastVisible(true);
+  };
 
   const handleLogin = async () => {
     if (!username || !password) {
-      alert('Ingrese sus credenciales');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      showToast('Ingrese sus credenciales', 'warning');
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await AuthService.login(username, password);
-      // Route based on role
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const roles = response.roles || [];
       if (roles.includes('ADMIN')) {
         navigation.replace('AdminDashboard');
@@ -35,10 +70,11 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       } else if (roles.includes('SOCIO')) {
         navigation.replace('SocioDashboard');
       } else {
-        navigation.replace('SecretaryPOS'); 
+        navigation.replace('SecretaryPOS');
       }
     } catch (error: any) {
-      alert('Error de login: ' + error.message);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast(error.message || 'Credenciales incorrectas', 'error');
     } finally {
       setLoading(false);
     }
@@ -46,50 +82,87 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onDismiss={() => setToastVisible(false)}
+      />
+
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
-        <View style={styles.headerContainer}>
-          <Ionicons name="bus" size={64} color={colors.primary} />
+        <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          {/* Logo circular con gradiente */}
+          <LinearGradient
+            colors={colors.gradientBlue as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoCircle}
+          >
+            <Ionicons name="bus" size={40} color="#FFFFFF" />
+          </LinearGradient>
+
           <Text style={styles.title}>Sindicato Trans</Text>
           <Text style={styles.subtitle}>Gestión Integral de Flota</Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.formContainer}>
+        <Animated.View style={[styles.formContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          {/* Input Usuario */}
           <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
+            <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.input}
               placeholder="Usuario"
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.textTertiary}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
-              keyboardType="default"
+              autoCorrect={false}
+              returnKeyType="next"
             />
           </View>
 
+          {/* Input Contraseña */}
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
+            <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.input}
               placeholder="Contraseña"
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.textTertiary}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
+            <AnimatedPressable onPress={() => setShowPassword(!showPassword)} haptic={false}>
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={colors.textSecondary}
+              />
+            </AnimatedPressable>
           </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+          {/* Botón Login */}
+          <AnimatedPressable
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.loginButtonText}>Ingresar al Sistema</Text>
+              <Text style={styles.loginButtonText}>Ingresar</Text>
             )}
-          </TouchableOpacity>
-        </View>
+          </AnimatedPressable>
+        </Animated.View>
+
+        <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
+          <Text style={styles.footerText}>Sistema de Transporte Sindical v1.0</Text>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -103,62 +176,77 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    // Apple shadow
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
   title: {
-    ...typography.h1,
+    ...typography.largeTitle,
     color: colors.text,
-    marginTop: 16,
   },
   subtitle: {
-    ...typography.body,
+    ...typography.subhead,
     color: colors.textSecondary,
-    marginTop: 8,
+    marginTop: 4,
   },
   formContainer: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
     paddingHorizontal: 16,
-    height: 56,
-  },
-  inputIcon: {
-    marginRight: 12,
+    height: 52,
+    gap: 12,
   },
   input: {
     flex: 1,
-    ...typography.mono,
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
     height: '100%',
   },
   loginButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    height: 56,
+    borderRadius: 14,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+    // Apple shadow
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loginButtonText: {
-    ...typography.h3,
+    ...typography.headline,
     color: '#FFFFFF',
-  }
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 48,
+  },
+  footerText: {
+    ...typography.caption1,
+    color: colors.textTertiary,
+  },
 });

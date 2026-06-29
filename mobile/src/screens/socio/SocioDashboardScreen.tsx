@@ -6,6 +6,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { User, Vehicle } from '../../types';
 
 export interface SocioDashboardScreenProps {
@@ -96,12 +97,12 @@ export default function SocioDashboardScreen({ navigation }: SocioDashboardScree
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity style={styles.iconButton} onPress={onRefresh}>
+          <AnimatedPressable style={styles.iconButton} onPress={onRefresh}>
             <Ionicons name="refresh" size={22} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+          </AnimatedPressable>
+          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </View>
 
@@ -166,118 +167,24 @@ export default function SocioDashboardScreen({ navigation }: SocioDashboardScree
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  headerSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
-    marginBottom: 16,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  totalBox: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  statValue: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    fontFamily: typography.fontFamilyBold,
-    marginBottom: 16,
-  },
-  emptyCard: {
-    backgroundColor: colors.card,
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  vehicleCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  vehicleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  plate: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-    marginLeft: 8,
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 10,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  routeText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
+  headerTitle: { ...typography.title2, color: colors.text },
+  headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },
+  iconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  statsContainer: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  statBox: { flex: 1, backgroundColor: colors.card, padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  totalBox: { marginBottom: 20, alignItems: 'center' },
+  statLabel: { ...typography.footnote, color: colors.textSecondary, marginBottom: 6 },
+  statValue: { ...typography.title2, color: colors.text },
+  sectionTitle: { ...typography.title3, color: colors.text, marginBottom: 12 },
+  emptyCard: { backgroundColor: colors.card, padding: 32, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  emptyText: { ...typography.subhead, color: colors.textSecondary, marginTop: 8 },
+  vehicleCard: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  vehicleHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  plate: { ...typography.headline, color: colors.text, marginLeft: 10, flex: 1 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  statusText: { ...typography.caption2, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  routeText: { ...typography.caption1, color: colors.textSecondary },
 });

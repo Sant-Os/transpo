@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import Toast from '../../components/Toast';
 import { User, Vehicle, Route, Trip } from '../../types';
 
 export interface AdminDashboardScreenProps {
@@ -353,15 +356,15 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
+          <AnimatedPressable style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
             <Ionicons name="chatbubbles-outline" size={22} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={onRefresh}>
+          </AnimatedPressable>
+          <AnimatedPressable style={styles.iconButton} onPress={onRefresh}>
             <Ionicons name="refresh" size={22} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+          </AnimatedPressable>
+          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </View>
 
@@ -394,29 +397,29 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
 
         <Text style={styles.sectionTitle}>Módulos de Gestión</Text>
         <View style={styles.grid}>
-          <TouchableOpacity style={styles.gridCard} onPress={() => openManagementModal('users')}>
+          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('users')}>
             <Ionicons name="people-outline" size={32} color={colors.primary} />
             <Text style={styles.gridTitle}>Usuarios</Text>
             <Text style={styles.gridCount}>{userCount} Registros</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity style={styles.gridCard} onPress={() => openManagementModal('vehicles')}>
+          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('vehicles')}>
             <Ionicons name="bus-outline" size={32} color={colors.primary} />
             <Text style={styles.gridTitle}>Flota (Vehículos)</Text>
             <Text style={styles.gridCount}>{vehicleCount} Unidades</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity style={styles.gridCard} onPress={() => openManagementModal('routes')}>
+          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('routes')}>
             <Ionicons name="map-outline" size={32} color={colors.primary} />
             <Text style={styles.gridTitle}>Rutas y Precios</Text>
             <Text style={styles.gridCount}>{routeCount} Rutas</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity style={styles.gridCard} onPress={() => openManagementModal('trips')}>
+          <AnimatedPressable style={styles.gridCard} onPress={() => openManagementModal('trips')}>
             <Ionicons name="calendar-outline" size={32} color={colors.primary} />
             <Text style={styles.gridTitle}>Viajes del Día</Text>
             <Text style={styles.gridCount}>{tripCount} Salidas</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Alertas e Incidentes en Ruta</Text>
@@ -437,12 +440,12 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                   Vehículo: {alertItem.vehicle?.plate} | Reporta: {alertItem.driver?.full_name}
                 </Text>
               </View>
-              <TouchableOpacity 
+              <AnimatedPressable 
                 style={styles.resolveBtn}
                 onPress={() => handleResolveAlert(alertItem.id)}
               >
                 <Text style={styles.resolveBtnText}>Resolver</Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           ))
         )}
@@ -457,18 +460,18 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                        mgmtType === 'vehicles' ? 'Vehículos' :
                        mgmtType === 'routes' ? 'Rutas' : 'Viajes'}
             </Text>
-            <TouchableOpacity onPress={() => setShowMgmtModal(false)} style={{ padding: 4 }}>
+            <AnimatedPressable onPress={() => setShowMgmtModal(false)} style={{ padding: 4 }}>
               <Ionicons name="close" size={28} color={colors.text} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           </View>
 
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <TouchableOpacity 
+            <AnimatedPressable 
               style={[styles.addBtn, { marginBottom: 16 }]} 
               onPress={() => setShowAddForm(!showAddForm)}
             >
               <Text style={styles.addBtnText}>{showAddForm ? 'Cerrar Formulario' : 'Agregar Nuevo Registro'}</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
 
             {showAddForm && (
               <View style={[styles.card, { marginBottom: 20 }]}>
@@ -482,9 +485,9 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                     <TextInput style={styles.modalInput} placeholder="CI" value={newCI} onChangeText={setNewCI} />
                     <TextInput style={styles.modalInput} placeholder="Teléfono" value={newPhone} onChangeText={setNewPhone} />
                     <TextInput style={styles.modalInput} placeholder="Rol (ADMIN, SECRETARY, DRIVER, SOCIO)" value={newRole} onChangeText={setNewRole} autoCapitalize="characters" />
-                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddUser}>
+                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddUser}>
                       <Text style={styles.submitBtnText}>Guardar Usuario</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                   </View>
                 )}
 
@@ -495,9 +498,9 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                     <TextInput style={styles.modalInput} placeholder="Año (ej: 2020)" value={newYear} onChangeText={setNewYear} keyboardType="numeric" />
                     <TextInput style={styles.modalInput} placeholder="Capacidad (Asientos)" value={newCapacity} onChangeText={setNewCapacity} keyboardType="numeric" />
                     <TextInput style={styles.modalInput} placeholder="ID Socio Propietario" value={newOwnerId} onChangeText={setNewOwnerId} keyboardType="numeric" />
-                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddVehicle}>
+                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddVehicle}>
                       <Text style={styles.submitBtnText}>Guardar Vehículo</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                   </View>
                 )}
 
@@ -507,9 +510,9 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                     <TextInput style={styles.modalInput} placeholder="Origen (ej: Uyuni)" value={newOrigin} onChangeText={setNewOrigin} />
                     <TextInput style={styles.modalInput} placeholder="Destino (ej: Potosi)" value={newDest} onChangeText={setNewDest} />
                     <TextInput style={styles.modalInput} placeholder="Duración Estimada (Minutos)" value={newDuration} onChangeText={setNewDuration} keyboardType="numeric" />
-                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddRoute}>
+                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddRoute}>
                       <Text style={styles.submitBtnText}>Guardar Ruta</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                   </View>
                 )}
 
@@ -519,9 +522,9 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                     <TextInput style={styles.modalInput} placeholder="ID del Vehículo" value={newTripVehicleId} onChangeText={setNewTripVehicleId} keyboardType="numeric" />
                     <TextInput style={styles.modalInput} placeholder="ID del Chofer" value={newTripDriverId} onChangeText={setNewTripDriverId} keyboardType="numeric" />
                     <TextInput style={styles.modalInput} placeholder="Hora Salida (ej: 14:30)" value={newTripTime} onChangeText={setNewTripTime} />
-                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddTrip}>
+                    <AnimatedPressable style={styles.submitBtn} onPress={handleAddTrip}>
                       <Text style={styles.submitBtnText}>Programar Viaje</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                   </View>
                 )}
               </View>
@@ -545,7 +548,7 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                     <Text style={styles.alertDesc}>Ruta ID: {item.route_id} - Salida: {item.departure_time} - {item.status}</Text>
                   )}
                 </View>
-                <TouchableOpacity 
+                <AnimatedPressable 
                   style={[styles.resolveBtn, { backgroundColor: colors.danger }]}
                   onPress={() => {
                     if (mgmtType === 'users') handleDeleteUser(item.id);
@@ -555,7 +558,7 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
                   }}
                 >
                   <Text style={styles.resolveBtnText}>Borrar</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               </View>
             ))}
           </ScrollView>
@@ -566,202 +569,36 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.text,
-    fontFamily: typography.fontFamilyBold,
-  },
-  headerSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    fontFamily: typography.fontFamilyBold,
-    marginBottom: 16,
-  },
-  kpiContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 12,
-  },
-  kpiCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  kpiLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  kpiValue: {
-    ...typography.h2,
-    color: colors.success,
-    fontFamily: typography.fontFamilyBold,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gridCard: {
-    backgroundColor: colors.card,
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  gridTitle: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-    marginTop: 8,
-  },
-  gridCount: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  emptyCard: {
-    backgroundColor: colors.card,
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  alertCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  alertTitle: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-  },
-  alertDesc: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  alertMeta: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  resolveBtn: {
-    backgroundColor: colors.success,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  resolveBtnText: {
-    ...typography.caption,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    ...typography.h2,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-  },
-  addBtn: {
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addBtnText: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  card: {
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalInput: {
-    ...typography.body,
-    fontFamily: typography.fontFamily,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: colors.background,
-    color: colors.text,
-  },
-  submitBtn: {
-    backgroundColor: colors.success,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  submitBtnText: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  }
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
+  headerTitle: { ...typography.title2, color: colors.text },
+  headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },
+  iconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  sectionTitle: { ...typography.title3, color: colors.text, marginBottom: 12 },
+  kpiContainer: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  kpiCard: { flex: 1, backgroundColor: colors.card, padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  kpiLabel: { ...typography.footnote, color: colors.textSecondary, marginBottom: 6 },
+  kpiValue: { ...typography.title2, color: colors.success },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  gridCard: { backgroundColor: colors.card, width: '48%', padding: 20, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  gridTitle: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text, marginTop: 10 },
+  gridCount: { ...typography.caption1, color: colors.textSecondary, marginTop: 4 },
+  emptyCard: { backgroundColor: colors.card, padding: 32, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  emptyText: { ...typography.subhead, color: colors.textSecondary, marginTop: 8 },
+  alertCard: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 10, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  alertTitle: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text },
+  alertDesc: { ...typography.caption1, color: colors.textSecondary, marginTop: 3 },
+  alertMeta: { ...typography.caption2, color: colors.textTertiary, marginTop: 3 },
+  resolveBtn: { backgroundColor: colors.success, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  resolveBtnText: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  modalContainer: { flex: 1, backgroundColor: colors.background },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.separator },
+  modalTitle: { ...typography.title2, color: colors.text },
+  addBtn: { backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 14, alignItems: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  addBtnText: { ...typography.headline, color: '#FFF' },
+  card: { backgroundColor: colors.card, padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  modalInput: { ...typography.body, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12, color: colors.text },
+  submitBtn: { backgroundColor: colors.success, paddingVertical: 14, borderRadius: 14, alignItems: 'center', shadowColor: colors.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  submitBtnText: { ...typography.headline, color: '#FFF' },
 });

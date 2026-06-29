@@ -8,6 +8,7 @@ import { typography } from '../../theme/typography';
 import { supabase } from '../../services/supabase';
 import { AuthService } from '../../services/AuthService';
 import { OfflineQueue } from '../../services/OfflineQueue';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { User, Vehicle, Trip } from '../../types';
 
 export interface DriverDashboardScreenProps {
@@ -185,12 +186,12 @@ export default function DriverDashboardScreen({ navigation }: DriverDashboardScr
               value={isOnline}
             />
           </View>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
+          <AnimatedPressable style={styles.iconButton} onPress={() => navigation.navigate('Chat')}>
             <Ionicons name="chatbubbles-outline" size={22} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+          </AnimatedPressable>
+          <AnimatedPressable style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </View>
 
@@ -245,37 +246,37 @@ export default function DriverDashboardScreen({ navigation }: DriverDashboardScr
         <Text style={styles.sectionTitle}>Acciones en Ruta</Text>
         
         <View style={styles.actionsGrid}>
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={styles.actionButton}
             onPress={handleStartTrip}
           >
             <Ionicons name="play" size={32} color={colors.primary} />
             <Text style={styles.actionText}>Iniciar Salida</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={styles.actionButton}
             onPress={handleOpenScanner}
           >
             <Ionicons name="qr-code-outline" size={32} color={colors.primary} />
             <Text style={styles.actionText}>Escanear Encomienda</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={styles.actionButton}
             onPress={() => handleAction('CHECKPOINT_MARK', { location: 'Parada intermedia' })}
           >
             <Ionicons name="location" size={32} color={colors.primary} />
             <Text style={styles.actionText}>Marcar Parada</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={[styles.actionButton, { borderColor: colors.danger }]}
             onPress={handleGPSAlert}
           >
             <Ionicons name="warning" size={32} color={colors.danger} />
             <Text style={[styles.actionText, { color: colors.danger }]}>Alerta GPS</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -283,144 +284,27 @@ export default function DriverDashboardScreen({ navigation }: DriverDashboardScr
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  headerSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  networkToggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  networkStatusText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  offlineBanner: {
-    backgroundColor: colors.warning,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-  },
-  offlineText: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 12,
-  },
-  tripStatusContainer: {
-    marginBottom: 16,
-  },
-  tripStatusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tripStatusText: {
-    ...typography.caption,
-    fontFamily: typography.fontFamilyBold,
-    color: '#FFF',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 12,
-  },
-  infoText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  emptyCard: {
-    backgroundColor: colors.card,
-    padding: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  actionButton: {
-    backgroundColor: colors.card,
-    width: '47%',
-    aspectRatio: 1,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  actionText: {
-    ...typography.body,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.text,
-    marginTop: 12,
-    textAlign: 'center',
-  }
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
+  headerTitle: { ...typography.title2, color: colors.text },
+  headerSubtitle: { ...typography.footnote, color: colors.textSecondary, marginTop: 2 },
+  iconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  networkToggleContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  networkStatusText: { ...typography.caption1, color: colors.textSecondary },
+  offlineBanner: { backgroundColor: colors.warning, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16 },
+  offlineText: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  sectionTitle: { ...typography.title3, color: colors.text, marginBottom: 12, marginTop: 8 },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  cardTitle: { ...typography.title3, color: colors.text, marginBottom: 12 },
+  tripStatusContainer: { marginBottom: 16 },
+  tripStatusBadge: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  tripStatusText: { ...typography.caption1, fontFamily: typography.fontFamilySemiBold, color: '#FFF' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 },
+  infoText: { ...typography.subhead, color: colors.text },
+  emptyCard: { backgroundColor: colors.card, padding: 32, borderRadius: 16, alignItems: 'center', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  emptyText: { ...typography.subhead, color: colors.textSecondary, marginTop: 12, textAlign: 'center' },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  actionButton: { backgroundColor: colors.card, width: '47%', aspectRatio: 1, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  actionText: { ...typography.subhead, fontFamily: typography.fontFamilySemiBold, color: colors.text, marginTop: 10, textAlign: 'center' },
 });

@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { supabase } from '../services/supabase';
 import { AuthService } from '../services/AuthService';
+import AnimatedPressable from '../components/AnimatedPressable';
 import { User } from '../types';
 
 export interface ChatScreenProps {
@@ -130,31 +131,31 @@ export default function ChatScreen({ navigation }: ChatScreenProps) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <AnimatedPressable style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
           <Text style={styles.backBtnText}>Volver</Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
         <Text style={styles.headerTitle}>Chat Sindical</Text>
         <View style={{ width: 60 }} />
       </View>
 
       {/* Channel Toggles */}
       <View style={styles.channelBar}>
-        <TouchableOpacity 
+        <AnimatedPressable 
           style={[styles.channelTab, activeChannel === 'GENERAL' && styles.channelTabActive]}
           onPress={() => setActiveChannel('GENERAL')}
         >
           <Ionicons name="people-outline" size={18} color={activeChannel === 'GENERAL' ? colors.primary : colors.textSecondary} />
           <Text style={[styles.channelTabText, activeChannel === 'GENERAL' && styles.channelTabTextActive]}>General</Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
 
-        <TouchableOpacity 
+        <AnimatedPressable 
           style={[styles.channelTab, activeChannel === 'OPERATIONS' && styles.channelTabActive]}
           onPress={() => setActiveChannel('OPERATIONS')}
         >
           <Ionicons name="construct-outline" size={18} color={activeChannel === 'OPERATIONS' ? colors.primary : colors.textSecondary} />
           <Text style={[styles.channelTabText, activeChannel === 'OPERATIONS' && styles.channelTabTextActive]}>Operaciones</Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
       {/* Message List */}
@@ -227,13 +228,13 @@ export default function ChatScreen({ navigation }: ChatScreenProps) {
             onChangeText={setNewMessage}
             multiline
           />
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={[styles.sendBtn, !newMessage.trim() && styles.sendBtnDisabled]}
             disabled={!newMessage.trim()}
             onPress={handleSendMessage}
           >
             <Ionicons name="send" size={20} color="#FFF" />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -241,169 +242,33 @@ export default function ChatScreen({ navigation }: ChatScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backBtnText: {
-    ...typography.body,
-    color: colors.primary,
-    fontFamily: typography.fontFamilyBold,
-  },
-  headerTitle: {
-    ...typography.h3,
-    color: colors.text,
-    fontFamily: typography.fontFamilyBold,
-  },
-  channelBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  channelTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
-    gap: 8,
-  },
-  channelTabActive: {
-    borderBottomColor: colors.primary,
-  },
-  channelTabText: {
-    ...typography.caption,
-    fontFamily: typography.fontFamilyBold,
-    color: colors.textSecondary,
-  },
-  channelTabTextActive: {
-    color: colors.primary,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  messageScroll: {
-    flex: 1,
-  },
-  messageContent: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 80,
-    gap: 16,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-  messageBubbleContainer: {
-    marginBottom: 16,
-    maxWidth: '80%',
-  },
-  ownMessageContainer: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
-  },
-  otherMessageContainer: {
-    alignSelf: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  senderLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 4,
-    marginLeft: 4,
-  },
-  messageBubble: {
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  ownMessageBubble: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  otherMessageBubble: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderBottomLeftRadius: 4,
-  },
-  messageText: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: typography.fontFamily,
-  },
-  ownMessageText: {
-    color: '#FFF',
-  },
-  timestamp: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginHorizontal: 6,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: colors.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    ...typography.body,
-    fontFamily: typography.fontFamily,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    color: colors.text,
-    maxHeight: 100,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendBtnDisabled: {
-    backgroundColor: colors.border,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  backBtnText: { ...typography.body, color: colors.primary },
+  headerTitle: { ...typography.headline, color: colors.text, marginLeft: 12 },
+  channelBar: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.separator },
+  channelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent', gap: 6 },
+  channelTabActive: { borderBottomColor: colors.primary },
+  channelTabText: { ...typography.subhead, fontFamily: typography.fontFamilyMedium, color: colors.textSecondary },
+  channelTabTextActive: { color: colors.primary, fontFamily: typography.fontFamilySemiBold },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  messageScroll: { flex: 1 },
+  messageContent: { padding: 16, paddingBottom: 24 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, gap: 16 },
+  emptyText: { ...typography.subhead, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 },
+  messageBubbleContainer: { marginBottom: 12, maxWidth: '80%' },
+  ownMessageContainer: { alignSelf: 'flex-end', alignItems: 'flex-end' },
+  otherMessageContainer: { alignSelf: 'flex-start', alignItems: 'flex-start' },
+  senderLabel: { ...typography.caption1, color: colors.textSecondary, marginBottom: 3, marginLeft: 6 },
+  messageBubble: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
+  ownMessageBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  otherMessageBubble: { backgroundColor: colors.surface, borderBottomLeftRadius: 4 },
+  messageText: { ...typography.body, color: colors.text },
+  ownMessageText: { color: '#FFF' },
+  timestamp: { ...typography.caption2, color: colors.textSecondary, marginTop: 4, marginHorizontal: 6 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.card, borderTopWidth: 0.5, borderTopColor: colors.separator, gap: 10 },
+  input: { flex: 1, ...typography.body, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, color: colors.text, maxHeight: 100 },
+  sendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  sendBtnDisabled: { backgroundColor: colors.surface },
 });
